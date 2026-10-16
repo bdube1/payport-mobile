@@ -5,7 +5,7 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../../constants/colors';
-import { productsApi, transactionsApi, normalizePhone, formatAmount, generateReference } from '../../lib/api';
+import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference } from '../../lib/api';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
 import { isBiometricEnabled } from '../../lib/auth';
 
@@ -112,13 +112,13 @@ export default function AirtimeScreen() {
     const ref = generateReference('MOB');
     const payPhone = normalizePhone(paymentPhone);
     try {
-      await transactionsApi.initiate({ reference: ref, productTypeCode: `AIRTIME_${network.networkCode}`, recipientIdentifier: normalizePhone(recipientPhone), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' });
-      await transactionsApi.pay({ reference: ref, paymentMethodCode: paymentMethod, customerPhone: payPhone });
+      await startPayment({ reference: ref, productTypeCode: `AIRTIME_${network.networkCode}`, recipientIdentifier: normalizePhone(recipientPhone), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' },
+        { paymentMethodCode: paymentMethod, customerPhone: payPhone });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowConfirm(false);
       router.push(`/processing/${ref}`);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Payment failed. Please try again.');
+      setError(paymentError(e).message);
       setLoading(false); setShowConfirm(false);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }

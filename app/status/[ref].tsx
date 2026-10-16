@@ -20,7 +20,8 @@ function fmtDate(val: any) {
 const STATUS_COLOR: Record<string, string> = {
   COMPLETED: Colors.green, PAYMENT_PENDING: Colors.primary,
   PAYMENT_FAILED: Colors.red, FULFILMENT_FAILED: Colors.red,
-  FULFILMENT_PENDING: Colors.orange,
+  FULFILMENT_PENDING: Colors.orange, FULFILMENT_RETRY: Colors.orange, MANUAL_FULFILMENT: Colors.orange,
+  PAYMENT_TIMEOUT: Colors.textSecondary, REFUND_PENDING: Colors.primary, REFUNDED: Colors.primary, CANCELLED: Colors.textSecondary,
 };
 
 export default function StatusScreen() {
@@ -78,9 +79,10 @@ export default function StatusScreen() {
             {/* Status card */}
             <View style={[S.statusCard, { borderLeftColor: statusColor }]}>
               <Text style={[S.statusTxt, { color: statusColor }]}>
-                {tx.status === 'COMPLETED' ? '✓ ' : tx.status.includes('FAIL') ? '✗ ' : '⏳ '}
+                {tx.status === 'COMPLETED' ? '✓ ' : (tx.status.includes('FAIL') || tx.status === 'PAYMENT_TIMEOUT') ? '✗ ' : '⏳ '}
                 {tx.status.replace(/_/g, ' ')}
               </Text>
+              {!!tx.outcomeMessage && <Text style={[S.statusDate, { color: statusColor }]}>{tx.outcomeMessage}</Text>}
               <Text style={S.statusDate}>{fmtDate(txDate)}</Text>
             </View>
 

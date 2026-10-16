@@ -5,7 +5,7 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../../constants/colors';
-import { productsApi, transactionsApi, normalizePhone, formatAmount, generateReference, BASE_URL } from '../../lib/api';
+import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, BASE_URL } from '../../lib/api';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
 import { isBiometricEnabled } from '../../lib/auth';
 
@@ -192,7 +192,7 @@ export default function DataScreen() {
     const ref = generateReference('MOB');
     const payPhone = normalizePhone(paymentPhone);
     try {
-      await transactionsApi.initiate({ 
+      await startPayment({ 
         reference: ref, 
         productTypeCode: `DATA_${network}`, 
         recipientIdentifier: normalizePhone(recipientPhone), 
@@ -201,12 +201,11 @@ export default function DataScreen() {
         customerPhone: payPhone, 
         channel: 'MOB', 
         productConfig: JSON.stringify({ bundleCode: bundle.bundleCode }) 
-      });
-      await transactionsApi.pay({ reference: ref, paymentMethodCode: paymentMethod, customerPhone: payPhone });
+      }, { paymentMethodCode: paymentMethod, customerPhone: payPhone });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowConfirm(false); router.push(`/processing/${ref}`);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Payment failed'); setLoading(false); setShowConfirm(false);
+      setError(paymentError(e).message); setLoading(false); setShowConfirm(false);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };

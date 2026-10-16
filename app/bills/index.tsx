@@ -6,7 +6,7 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../../constants/colors';
-import { transactionsApi, billsApi, productsApi, normalizePhone, formatAmount, generateReference } from '../../lib/api';
+import { startPayment, paymentError, billersApi, productsApi, normalizePhone, formatAmount, generateReference } from '../../lib/api';
 import { fetchActiveBillers, getFallbackIcon, Biller } from '../../lib/billers';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
 import { isBiometricEnabled } from '../../lib/auth';
@@ -58,7 +58,15 @@ export default function BillsScreen() {
   const lookupCustomer = async () => {
     if (!accountRef.trim()) { setError('Enter the account/meter number'); return; }
     setInfoLoading(true); setError('');
-    try { const r = await billsApi.getCustomerInfo(biller.code, accountRef.trim(), currency); setCustomerInfo(r.data?.data || r.data); }
+    try {
+      const r = await billersApi.lookup(biller.code, accountRef.trim().replace(/\s+/g, ''), currency);
+      const a = r.data?.data || {};
+      if (!a.payable) { setCustomerInfo(null); setError(a.notPayableReason || 'This account cannot be paid right now.'); return; }
+      const accepted: string[] = a.acceptedCurrencies?.length ? a.acceptedCurrencies : [a.currency || currency];
+      if (!accepted.includes(currency)) { setCustomerInfo(null); setError(`This account accepts ${accepted.join(' or ')} only.`); return; }
+      const d = a.details || {};
+      setCustomerInfo({ customerName: a.holderName, outstandingBalance: d.balanceMinor ? Number(d.balanceMinor) / 100 : 0, acceptedCurrencies: accepted });
+    }
     catch (e: any) { setError(e.response?.data?.message || 'Account not found'); setCustomerInfo(null); }
     finally { setInfoLoading(false); }
   };
@@ -84,12 +92,12 @@ export default function BillsScreen() {
     const ref = generateReference('MOB');
     const payPhone = normalizePhone(paymentPhone);
     try {
-      await transactionsApi.initiate({ reference: ref, productTypeCode: biller.productCode, recipientIdentifier: accountRef.trim(), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' });
-      await transactionsApi.pay({ reference: ref, paymentMethodCode: paymentMethod, customerPhone: payPhone });
+      await startPayment({ reference: ref, productTypeCode: biller.productCode, recipientIdentifier: accountRef.trim(), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' },
+        { paymentMethodCode: paymentMethod, customerPhone: payPhone });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowConfirm(false); router.push(`/processing/${ref}`);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Payment failed'); setLoading(false); setShowConfirm(false);
+      setError(paymentError(e).message); setLoading(false); setShowConfirm(false);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };

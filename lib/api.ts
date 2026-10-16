@@ -13,12 +13,50 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach JWT from secure storage
+// ── Per-transaction access tokens ──────────────────────────────────────────
+// /initiate returns a one-time accessToken for the reference; it is sent back as
+// X-Transaction-Token on /pay and when reading that transaction. Kept in memory and
+// in secure storage (so a restarted app can still show the outcome).
+const txTokens = new Map<string, string>();
+const txKey = (ref: string) => 'pp_tx_' + ref.replace(/[^A-Za-z0-9._-]/g, '_');
+
+export async function rememberTransactionToken(ref: string, token?: string | null) {
+  if (!ref || !token) return;
+  txTokens.set(ref, token);
+  try { await SecureStore.setItemAsync(txKey(ref), token); } catch {}
+}
+
+async function transactionToken(ref: string | null): Promise<string | null> {
+  if (!ref) return null;
+  const t = txTokens.get(ref);
+  if (t) return t;
+  try { return await SecureStore.getItemAsync(txKey(ref)); } catch { return null; }
+}
+
+function referenceOf(cfg: any): string | null {
+  const url: string = cfg.url || '';
+  const m = /\/api\/v1\/transactions\/([^/?]+)/.exec(url);
+  if (m && !['initiate', 'pay', 'my-history'].includes(m[1])) return decodeURIComponent(m[1]);
+  if (url.startsWith('/api/v1/transactions/pay')) {
+    try { return (typeof cfg.data === 'string' ? JSON.parse(cfg.data) : cfg.data)?.reference || null; } catch { return null; }
+  }
+  return null;
+}
+
+/** A fresh key per payment attempt (reuse it only when retrying the same attempt). */
+export function newIdempotencyKey(): string {
+  const hex = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  return `${hex(8)}-${hex(4)}-4${hex(3)}-${hex(4)}-${hex(12)}`;
+}
+
+// Attach JWT from secure storage, and the transaction's access token when there is one
 api.interceptors.request.use(async (cfg) => {
   try {
     const token = await SecureStore.getItemAsync('pp_token');
     if (token) cfg.headers.Authorization = `Bearer ${token}`;
   } catch {}
+  const txToken = await transactionToken(referenceOf(cfg));
+  if (txToken) cfg.headers['X-Transaction-Token'] = txToken;
   return cfg;
 });
 
@@ -33,13 +71,15 @@ let isRedirectingToLogin = false;
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
+    const data = err.response?.data;
+    const code = data?.error?.code || data?.code || null;
     const gwMsg =
-      err.response?.data?.error?.message ||
-      err.response?.data?.message ||
-      err.response?.data?.error ||
+      data?.error?.message ||
+      data?.message ||
+      (typeof data?.error === 'string' ? data.error : null) ||
       err.message;
-    if (gwMsg && err.response) {
-      err.response.data = { ...err.response.data, message: gwMsg };
+    if (err.response) {
+      err.response.data = { ...(data || {}), message: gwMsg, code };
     }
 
     if (err.response?.status === 401 && !isRedirectingToLogin) {
@@ -91,6 +131,20 @@ export function generateReference(channel = 'MOB'): string {
   return `PP-${channel}-${date}-${seq}`;
 }
 
+/**
+ * What to tell the customer when a payment cannot be started. Server wording is shown as sent:
+ * 503 PROVIDER_UNAVAILABLE ("...No money was taken...") -> suggest another method;
+ * 403 PAYMENT_NOT_ALLOWED -> the neutral message, which quotes the reference.
+ */
+export function paymentError(err: any, fallback = 'Payment failed. Please try again.') {
+  const status = err?.response?.status;
+  const code = err?.response?.data?.code;
+  const providerUnavailable = status === 503 || code === 'PROVIDER_UNAVAILABLE';
+  let message: string = err?.response?.data?.message || (err?.response ? fallback : 'No connection. Check your internet and try again.');
+  if (providerUnavailable) message = `${message} You can choose another payment method.`;
+  return { message, code, providerUnavailable, notAllowed: status === 403 || code === 'PAYMENT_NOT_ALLOWED' };
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────
 export const authApi = {
   register: (data: { fullName: string; phone: string; pin: string }) =>
@@ -125,30 +179,51 @@ export const transactionsApi = {
     customerPhone: string;
     channel: string;
     productConfig?: string;
-  }) => api.post('/api/v1/transactions/initiate', payload),
+  }, idempotencyKey?: string) => api.post('/api/v1/transactions/initiate', payload,
+    { headers: { 'Idempotency-Key': idempotencyKey || newIdempotencyKey() } }),
 
   pay: (payload: {
     reference: string;
     paymentMethodCode: string;
     customerPhone: string;
-  }) => api.post('/api/v1/transactions/pay', payload),
+  }, idempotencyKey?: string) => api.post('/api/v1/transactions/pay', payload,
+    { headers: { 'Idempotency-Key': idempotencyKey || newIdempotencyKey() } }),
 
   getStatus: (ref: string) => api.get(`/api/v1/transactions/${ref}`),
+  getOutcome: (ref: string, waitSeconds = 0) => api.get(`/api/v1/transactions/${ref}/outcome?waitSeconds=${waitSeconds}`),
   getTimeline: (ref: string) => api.get(`/api/v1/transactions/${ref}/timeline`),
   getMyHistory: (page = 0, size = 15) =>
     api.get(`/api/v1/transactions/my-history?page=${page}&size=${size}`),
 };
 
+/** Initiate + pay as one attempt, with idempotency keys and the access token kept for the reference. */
+export async function startPayment(
+  initiatePayload: Parameters<typeof transactionsApi.initiate>[0],
+  payPayload: { paymentMethodCode: string; customerPhone: string },
+) {
+  const attempt = newIdempotencyKey();
+  const init = await transactionsApi.initiate(initiatePayload, attempt + ':initiate');
+  const tx = init.data?.data || init.data;
+  await rememberTransactionToken(initiatePayload.reference, tx?.accessToken);
+  const paid = await transactionsApi.pay({ ...payPayload, reference: initiatePayload.reference }, attempt + ':pay');
+  return paid.data?.data || paid.data;
+}
+
 // ── Bills ─────────────────────────────────────────────────────────────────
-export const billsApi = {
-  getCustomerInfo: (billerCode: string, accountRef: string, currency: string) =>
-    api.post('/api/v1/bills/customer-info', { billerCode, accountRef, currency }),
+// Biller catalogue (label, accountPattern, hint, currencies, limits) and account lookup
+// (holderName, acceptedCurrencies, payable / notPayableReason, details).
+export const billersApi = {
+  catalogue: () => api.get('/api/v1/billers'),
+  lookup: (code: string, accountNumber: string, currency?: string, sourcePhone?: string) =>
+    api.post(`/api/v1/billers/${encodeURIComponent(code)}/lookup`, { accountNumber, currency, sourcePhone }),
 };
 
 // ── Profile ───────────────────────────────────────────────────────────────
 export const profileApi = {
-  registerPushToken: (token: string) =>
-    api.post('/api/v1/profile/push-token', { token }),
+  registerPushToken: (token: string, platform: string) =>
+    api.post('/api/v1/profile/push-token', { token, platform }),
+  unregisterPushToken: (token: string) =>
+    api.delete('/api/v1/profile/push-token', { data: { token } }),
 };
 
 // ── Beneficiaries ─────────────────────────────────────────────────────────
