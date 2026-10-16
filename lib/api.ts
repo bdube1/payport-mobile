@@ -139,7 +139,8 @@ export function generateReference(channel = 'MOB'): string {
 export function paymentError(err: any, fallback = 'Payment failed. Please try again.') {
   const status = err?.response?.status;
   const code = err?.response?.data?.code;
-  const providerUnavailable = status === 503 || code === 'PROVIDER_UNAVAILABLE';
+  // 503 CHANNEL_UNAVAILABLE: payments through the app are paused from the portal; another method won't help.
+  const providerUnavailable = code === 'PROVIDER_UNAVAILABLE' || (status === 503 && code !== 'CHANNEL_UNAVAILABLE');
   let message: string = err?.response?.data?.message || (err?.response ? fallback : 'No connection. Check your internet and try again.');
   if (providerUnavailable) message = `${message} You can choose another payment method.`;
   return { message, code, providerUnavailable, notAllowed: status === 403 || code === 'PAYMENT_NOT_ALLOWED' };
