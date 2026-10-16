@@ -200,15 +200,40 @@ export const transactionsApi = {
 /** Initiate + pay as one attempt, with idempotency keys and the access token kept for the reference. */
 export async function startPayment(
   initiatePayload: Parameters<typeof transactionsApi.initiate>[0],
-  payPayload: { paymentMethodCode: string; customerPhone: string },
+  payPayload: { paymentMethodCode: string; customerPhone: string; pin?: string },
 ) {
   const attempt = newIdempotencyKey();
   const init = await transactionsApi.initiate(initiatePayload, attempt + ':initiate');
   const tx = init.data?.data || init.data;
   await rememberTransactionToken(initiatePayload.reference, tx?.accessToken);
-  const paid = await transactionsApi.pay({ ...payPayload, reference: initiatePayload.reference }, attempt + ':pay');
+  const { pin, ...pay } = payPayload;
+  if (pay.paymentMethodCode === 'WALLET') {
+    // Paid from the signed-in holder's wallet, confirmed with their PIN (never sent to /transactions/pay).
+    const paid = await walletApi.pay(initiatePayload.reference, pin || '');
+    return paid.data?.data || paid.data;
+  }
+  const paid = await transactionsApi.pay({ ...pay, reference: initiatePayload.reference }, attempt + ':pay');
   return paid.data?.data || paid.data;
 }
+
+/** The PayPort wallet is offered only to a signed-in customer. */
+export function visibleMethods<T extends { code: string }>(methods: T[], signedIn: boolean): T[] {
+  return signedIn ? methods : methods.filter(m => m.code !== 'WALLET');
+}
+
+// ── Wallet (Phase 8; switched on by PayPort when licensed) ────────────────
+export const walletApi = {
+  list: () => api.get('/api/v1/wallet'),
+  open: (currency: string) => api.post('/api/v1/wallet/open', { currency }),
+  statement: (ref: string, limit = 100) => api.get(`/api/v1/wallet/${encodeURIComponent(ref)}/statement?limit=${limit}`),
+  transfer: (to: string, currency: string, amountMinor: number, pin: string, clientRef?: string) =>
+    api.post('/api/v1/wallet/transfers', { to, currency, amountMinor, pin, clientRef }),
+  pay: (reference: string, pin: string) => api.post('/api/v1/wallet/pay', { reference, pin }),
+  quote: (from: string, to: string, amountMinor: number) => api.post('/api/v1/wallet/fx/quotes', { from, to, amountMinor }),
+  convert: (quoteRef: string, pin: string) => api.post('/api/v1/wallet/fx/conversions', { quoteRef, pin }),
+  cashOutCode: (currency: string, amountMinor: number, pin: string) => api.post('/api/v1/wallet/cash-out-codes', { currency, amountMinor, pin }),
+  cashOutCodes: () => api.get('/api/v1/wallet/cash-out-codes'),
+};
 
 // ── Bills ─────────────────────────────────────────────────────────────────
 // Biller catalogue (label, accountPattern, hint, currencies, limits) and account lookup

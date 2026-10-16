@@ -223,3 +223,18 @@ Any change to an API endpoint should be made in both files:
 
 **"Could not connect to development server"**  
 → Stop the server (Ctrl+C), run `npm start -- --clear`
+
+## Build-time settings (app.config.js)
+
+| Variable | Purpose |
+|---|---|
+| `EXPO_PUBLIC_API_URL` | API base URL (defaults to the production API in app.json) |
+| `EAS_PROJECT_ID` | EAS project id for push notifications (`eas init`). Without it, push registration is skipped and the app says so. |
+
+Example: `EAS_PROJECT_ID=xxxxxxxx-xxxx-... eas build -p android --profile preview`.
+
+## Wallet
+
+The Wallet tab appears for signed-in customers. It shows "not available yet" until PayPort switches the
+WALLETS product line on in the ops console (licence recorded, then switched on). Paying with the wallet
+asks for the customer's PIN, which is sent only to the wallet endpoints.

@@ -5,7 +5,8 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../../constants/colors';
-import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, BASE_URL } from '../../lib/api';
+import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, BASE_URL, visibleMethods } from '../../lib/api';
+import { useAuthStore } from '../../store/authStore';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
 import { isBiometricEnabled } from '../../lib/auth';
 
@@ -30,6 +31,7 @@ export default function DataScreen() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [walletPin, setWalletPin] = useState('');
   const [products, setProducts] = useState<any[]>([]);
   const [logoError, setLogoError] = useState<Record<string, boolean>>({});
 
@@ -55,7 +57,7 @@ export default function DataScreen() {
 
   useEffect(() => {
     productsApi.getAll().then(r => setProducts((r.data?.data || r.data || []).filter((p: any) => p.category === 'DATA' && p.isActive))).catch(() => {});
-    productsApi.getPaymentMethods().then(r => { const m = (r.data?.data || r.data || []).filter((m: any) => m.isActive); setPaymentMethods(m); if (m.length > 0) setPaymentMethod(m[0].code); }).catch(() => {});
+    productsApi.getPaymentMethods().then(r => { const m = visibleMethods((r.data?.data || r.data || []).filter((m: any) => m.isActive), !!useAuthStore.getState().user); setPaymentMethods(m); if (m.length > 0) setPaymentMethod(m[0].code); }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -201,7 +203,7 @@ export default function DataScreen() {
         customerPhone: payPhone, 
         channel: 'MOB', 
         productConfig: JSON.stringify({ bundleCode: bundle.bundleCode }) 
-      }, { paymentMethodCode: paymentMethod, customerPhone: payPhone });
+      }, { paymentMethodCode: paymentMethod, customerPhone: payPhone, pin: walletPin });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowConfirm(false); router.push(`/processing/${ref}`);
     } catch (e: any) {
@@ -390,7 +392,8 @@ export default function DataScreen() {
           {/* 7. Wallet */}
           {network && (
             <>
-              <Text style={S.lbl}>Payment Wallet Number</Text>
+              {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={{ borderWidth: 1.5, borderColor: Colors.border, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 14, fontSize: 16, color: Colors.textPrimary, backgroundColor: '#fff', marginBottom: 4 }} /></>}
+            <Text style={S.lbl}>Payment Wallet Number</Text>
               <View style={S.phoneRow}>
                 <View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View>
                 <TextInput 

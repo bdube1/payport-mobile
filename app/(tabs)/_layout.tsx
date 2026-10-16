@@ -38,6 +38,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="wallet"
+        options={{
+          tabBarLabel: 'Wallet',
+          href: user ? '/wallet' : null,
+          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="history"
         options={{
           tabBarLabel: 'History',
