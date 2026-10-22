@@ -6,7 +6,8 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../../constants/colors';
-import { transactionsApi, billsApi, productsApi, normalizePhone, formatAmount, generateReference } from '../../lib/api';
+import { startPayment, paymentError, billersApi, productsApi, normalizePhone, formatAmount, generateReference, visibleMethods } from '../../lib/api';
+import { useAuthStore } from '../../store/authStore';
 import { fetchActiveBillers, getFallbackIcon, Biller } from '../../lib/billers';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
 import { isBiometricEnabled } from '../../lib/auth';
@@ -25,6 +26,7 @@ export default function BillsScreen() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [walletPin, setWalletPin] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,7 +34,7 @@ export default function BillsScreen() {
 
   useEffect(() => {
     productsApi.getPaymentMethods()
-      .then(r => { const m = (r.data?.data || r.data || []).filter((m: any) => m.isActive); setPaymentMethods(m); if (m.length > 0) setPaymentMethod(m[0].code); })
+      .then(r => { const m = visibleMethods((r.data?.data || r.data || []).filter((m: any) => m.isActive), !!useAuthStore.getState().user); setPaymentMethods(m); if (m.length > 0) setPaymentMethod(m[0].code); })
       .catch(() => {});
 
     // Billers are entirely admin-driven — same source of truth (and same
@@ -58,7 +60,15 @@ export default function BillsScreen() {
   const lookupCustomer = async () => {
     if (!accountRef.trim()) { setError('Enter the account/meter number'); return; }
     setInfoLoading(true); setError('');
-    try { const r = await billsApi.getCustomerInfo(biller.code, accountRef.trim(), currency); setCustomerInfo(r.data?.data || r.data); }
+    try {
+      const r = await billersApi.lookup(biller.code, accountRef.trim().replace(/\s+/g, ''), currency);
+      const a = r.data?.data || {};
+      if (!a.payable) { setCustomerInfo(null); setError(a.notPayableReason || 'This account cannot be paid right now.'); return; }
+      const accepted: string[] = a.acceptedCurrencies?.length ? a.acceptedCurrencies : [a.currency || currency];
+      if (!accepted.includes(currency)) { setCustomerInfo(null); setError(`This account accepts ${accepted.join(' or ')} only.`); return; }
+      const d = a.details || {};
+      setCustomerInfo({ customerName: a.holderName, outstandingBalance: d.balanceMinor ? Number(d.balanceMinor) / 100 : 0, acceptedCurrencies: accepted });
+    }
     catch (e: any) { setError(e.response?.data?.message || 'Account not found'); setCustomerInfo(null); }
     finally { setInfoLoading(false); }
   };
@@ -84,12 +94,12 @@ export default function BillsScreen() {
     const ref = generateReference('MOB');
     const payPhone = normalizePhone(paymentPhone);
     try {
-      await transactionsApi.initiate({ reference: ref, productTypeCode: biller.productCode, recipientIdentifier: accountRef.trim(), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' });
-      await transactionsApi.pay({ reference: ref, paymentMethodCode: paymentMethod, customerPhone: payPhone });
+      await startPayment({ reference: ref, productTypeCode: biller.productCode, recipientIdentifier: accountRef.trim(), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' },
+        { paymentMethodCode: paymentMethod, customerPhone: payPhone, pin: walletPin });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowConfirm(false); router.push(`/processing/${ref}`);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Payment failed'); setLoading(false); setShowConfirm(false);
+      setError(paymentError(e).message); setLoading(false); setShowConfirm(false);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
@@ -174,6 +184,7 @@ export default function BillsScreen() {
             </>}
 
             {/* 6. Wallet */}
+            {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={S.input} /></>}
             <Text style={S.lbl}>Payment Wallet Number</Text>
             <View style={S.phoneRow}><View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View><TextInput value={paymentPhone} onChangeText={setPaymentPhone} placeholder="Wallet for USSD prompt" placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} /></View>
             <TouchableOpacity style={S.btnPrimary} onPress={handleReview}><Text style={S.btnTxt}>Confirm and Pay</Text></TouchableOpacity>

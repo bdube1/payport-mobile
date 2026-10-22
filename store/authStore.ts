@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { authApi, normalizePhone } from '../lib/api';
 import { saveSession, clearSession, getUser, getToken, getDeviceId, PPUser } from '../lib/auth';
+import { registerForPush, unregisterPush } from '../lib/push';
 
 interface AuthState {
   user: PPUser | null;
@@ -23,6 +24,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   hydrate: async () => {
     const [user, token] = await Promise.all([getUser(), getToken()]);
     set({ user, token, hydrated: true });
+    // Tokens can rotate; registering again is a no-op when nothing changed.
+    if (user && token) registerForPush(user.phone);
   },
 
   login: async (phone, pin) => {
@@ -40,6 +43,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
       await saveSession(token, user);
       set({ user, token, loading: false });
+      registerForPush(user.phone);
       return { success: true };
     } catch (e: any) {
       const msg =
@@ -65,6 +69,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
       await saveSession(token, user);
       set({ user, token, loading: false });
+      registerForPush(user.phone);
       return { success: true };
     } catch (e: any) {
       const msg =
@@ -77,6 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    await unregisterPush();
     await clearSession();
     set({ user: null, token: null });
   },

@@ -5,7 +5,8 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../../constants/colors';
-import { productsApi, transactionsApi, normalizePhone, formatAmount, generateReference } from '../../lib/api';
+import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, visibleMethods } from '../../lib/api';
+import { useAuthStore } from '../../store/authStore';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
 import { isBiometricEnabled } from '../../lib/auth';
 
@@ -58,6 +59,7 @@ export default function AirtimeScreen() {
   const [networkLoading, setNetworkLoading] = useState(false);
   const [currencies, setCurrencies] = useState<string[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [walletPin, setWalletPin] = useState('');
   const [products, setProducts] = useState<any[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -66,7 +68,7 @@ export default function AirtimeScreen() {
 
   useEffect(() => {
     productsApi.getAll().then(r => setProducts((r.data?.data || r.data || []).filter((p: any) => p.category === 'AIRTIME'))).catch(() => {});
-    productsApi.getPaymentMethods().then(r => { const m = (r.data?.data || r.data || []).filter((m: any) => m.isActive); setPaymentMethods(m); if (m.length > 0) setPaymentMethod(m[0].code); }).catch(() => {});
+    productsApi.getPaymentMethods().then(r => { const m = visibleMethods((r.data?.data || r.data || []).filter((m: any) => m.isActive), !!useAuthStore.getState().user); setPaymentMethods(m); if (m.length > 0) setPaymentMethod(m[0].code); }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -112,13 +114,13 @@ export default function AirtimeScreen() {
     const ref = generateReference('MOB');
     const payPhone = normalizePhone(paymentPhone);
     try {
-      await transactionsApi.initiate({ reference: ref, productTypeCode: `AIRTIME_${network.networkCode}`, recipientIdentifier: normalizePhone(recipientPhone), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' });
-      await transactionsApi.pay({ reference: ref, paymentMethodCode: paymentMethod, customerPhone: payPhone });
+      await startPayment({ reference: ref, productTypeCode: `AIRTIME_${network.networkCode}`, recipientIdentifier: normalizePhone(recipientPhone), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' },
+        { paymentMethodCode: paymentMethod, customerPhone: payPhone, pin: walletPin });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowConfirm(false);
       router.push(`/processing/${ref}`);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Payment failed. Please try again.');
+      setError(paymentError(e).message);
       setLoading(false); setShowConfirm(false);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
@@ -143,6 +145,7 @@ export default function AirtimeScreen() {
             <Text style={S.lbl}>Amount{currency ? ` (${currency})` : ''}</Text>
             <TextInput value={customAmt} onChangeText={setCustomAmt} placeholder="e.g. 5.00" placeholderTextColor={Colors.textSecondary} keyboardType="decimal-pad" style={S.input} />
             {paymentMethods.length > 0 && <><Text style={S.lbl}>Payment Method</Text><View style={S.chipRow}>{paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{m.name}</Text></TouchableOpacity>)}</View></>}
+            {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={S.input} /></>}
             <Text style={S.lbl}>Payment Wallet Number</Text>
             <View style={S.phoneRow}><View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View><TextInput value={paymentPhone} onChangeText={setPaymentPhone} placeholder="Wallet for USSD prompt" placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} /></View>
             <TouchableOpacity style={S.btnPrimary} onPress={handleReview}><Text style={S.btnTxt}>Confirm and Pay</Text></TouchableOpacity>

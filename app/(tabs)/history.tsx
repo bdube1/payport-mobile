@@ -16,7 +16,7 @@ function fmtDate(val: any) {
   } catch { return '—'; }
 }
 
-const STATUS_COLOR: Record<string,string> = { COMPLETED: Colors.green, PAYMENT_PENDING: Colors.primary, PAYMENT_FAILED: Colors.red, FULFILMENT_FAILED: Colors.red, FULFILMENT_PENDING: Colors.orange };
+const STATUS_COLOR: Record<string,string> = { COMPLETED: Colors.green, PAYMENT_PENDING: Colors.primary, PAYMENT_FAILED: Colors.red, FULFILMENT_FAILED: Colors.red, FULFILMENT_PENDING: Colors.orange, FULFILMENT_RETRY: Colors.orange, MANUAL_FULFILMENT: Colors.orange, PAYMENT_TIMEOUT: Colors.textSecondary, REFUNDED: Colors.primary, REFUND_PENDING: Colors.primary };
 
 export default function HistoryScreen() {
   const router = useRouter();

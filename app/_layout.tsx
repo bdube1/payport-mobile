@@ -18,6 +18,7 @@ import {
   Nunito_700Bold,
 } from '@expo-google-fonts/nunito';
 import { useAuthStore } from '../store/authStore';
+import { listenForNotificationTaps } from '../lib/push';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,6 +38,8 @@ export default function RootLayout() {
     Nunito_700Bold,
   });
   const fontsLoaded = rubikLoaded && nunitoLoaded;
+
+  useEffect(() => listenForNotificationTaps(), []);
 
   useEffect(() => {
     hydrate();

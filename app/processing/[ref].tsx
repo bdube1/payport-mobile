@@ -14,7 +14,24 @@ const STEPS = [
   { key: 'FULFILMENT_PENDING',  label: 'Processing'        },
   { key: 'COMPLETED',           label: 'Delivered!'        },
 ];
-const FINAL = ['COMPLETED', 'PAYMENT_FAILED', 'FULFILMENT_FAILED', 'REFUNDED', 'TIMEOUT'];
+// Driven by the backend's `outcome` (the same answer the web app, USSD and push give).
+// REQUIRES_PAYMENT and PROCESSING are in progress; everything else is final. TIMED_OUT is
+// final: money that arrives after the window is refunded, never delivered.
+const IN_PROGRESS = ['REQUIRES_PAYMENT', 'PROCESSING'];
+
+function outcomeOf(tx: any): string {
+  if (!tx) return 'PROCESSING';
+  if (tx.outcome) return tx.outcome;
+  switch (tx.status) {
+    case 'COMPLETED': return 'SUCCEEDED';
+    case 'PAYMENT_FAILED': case 'FULFILMENT_FAILED': case 'MANUAL_FULFILMENT': return 'FAILED';
+    case 'PAYMENT_TIMEOUT': return 'TIMED_OUT';
+    case 'REFUND_PENDING': case 'REFUNDED': return 'REFUNDED';
+    case 'CANCELLED': return 'CANCELLED';
+    case 'INITIATED': return 'REQUIRES_PAYMENT';
+    default: return 'PROCESSING';
+  }
+}
 
 export default function ProcessingScreen() {
   const { ref }  = useLocalSearchParams<{ ref: string }>();
@@ -30,11 +47,14 @@ export default function ProcessingScreen() {
       const r = await transactionsApi.getStatus(ref);
       const data = r.data?.data || r.data;
       setTx(data);
-      if (FINAL.includes(data.status)) {
+      const outcome = outcomeOf(data);
+      if (!IN_PROGRESS.includes(outcome)) {
         clearInterval(pollRef.current!);
+        // Delivery not yet confirmed by the provider: keep checking, slowly.
+        if (outcome === 'NO_RESPONSE' && data.status === 'FULFILMENT_PENDING') pollRef.current = setInterval(poll, 15000);
         if (!hapticFired.current) {
           hapticFired.current = true;
-          await Haptics.notificationAsync(data.status === 'COMPLETED' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
+          await Haptics.notificationAsync(outcome === 'SUCCEEDED' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
         }
       }
     } catch {}
@@ -48,10 +68,26 @@ export default function ProcessingScreen() {
   }, []);
 
   const status     = tx?.status || 'INITIATED';
-  const isComplete = status === 'COMPLETED';
-  const isFailed   = ['PAYMENT_FAILED', 'FULFILMENT_FAILED', 'TIMEOUT'].includes(status);
+  const outcome    = outcomeOf(tx);
+  const message    = tx?.outcomeMessage || tx?.failureReason || '';
+  const isComplete = outcome === 'SUCCEEDED';
+  const confirmingDelivery = outcome === 'NO_RESPONSE' && status === 'FULFILMENT_PENDING';
+  const isTimedOut = outcome === 'TIMED_OUT' || (outcome === 'NO_RESPONSE' && !confirmingDelivery);
+  const isRefunded = outcome === 'REFUNDED';
+  const isFailed   = outcome === 'FAILED' || isTimedOut || outcome === 'CANCELLED';
   const stepIdx    = STEPS.findIndex(s => s.key === status);
-  const displayIdx = stepIdx === -1 ? 1 : stepIdx;
+  const displayIdx = stepIdx === -1 ? (['FULFILMENT_RETRY', 'MANUAL_FULFILMENT', 'FULFILMENT_FAILED'].includes(status) ? 3 : 1) : stepIdx;
+  const title = isComplete ? 'Payment Successful!'
+    : isTimedOut ? 'Payment not completed in time'
+    : outcome === 'CANCELLED' ? 'Cancelled'
+    : isFailed ? 'Transaction Failed'
+    : isRefunded ? 'Refunded'
+    : confirmingDelivery ? 'Confirming delivery'
+    : `Processing${dots}`;
+  const subtitle = isComplete ? 'Your order has been delivered.'
+    : isFailed ? (message || 'Something went wrong.')
+    : isRefunded ? (message || 'Your payment has been refunded.')
+    : (message || 'Approve the USSD prompt on your phone.');
 
   return (
     <GradientScreen edges={['top', 'bottom']}>
@@ -61,14 +97,15 @@ export default function ProcessingScreen() {
            isFailed   ? <Ionicons name="close" size={40} color="#fff" /> :
                          <ActivityIndicator size="large" color="#fff" />}
         </View>
-        <Text style={S.title}>{isComplete ? 'Payment Successful!' : isFailed ? 'Transaction Failed' : `Processing${dots}`}</Text>
-        <Text style={S.sub}>{isComplete ? 'Your order has been delivered.' : isFailed ? (tx?.failureReason || 'Something went wrong.') : 'Approve the USSD prompt on your phone.'}</Text>
+        <Text style={S.title}>{title}</Text>
+        <Text style={S.sub}>{subtitle}</Text>
+        {isTimedOut && <Text style={S.hint}>If money left your wallet after this, it will be refunded automatically. A late payment is never used.</Text>}
         <View style={S.refChip}><Text style={S.refTxt}>{ref}</Text></View>
 
         <View style={S.stepsCard}>
           {STEPS.map((s, idx) => {
             const done   = idx < displayIdx;
-            const active = idx === displayIdx && !isComplete && !isFailed;
+            const active = idx === displayIdx && !isComplete && !isFailed && !isRefunded;
             return (
               <View key={s.key} style={[S.stepRow, idx < STEPS.length - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.borderLight }]}>
                 <View style={[S.dot, done && { backgroundColor: Colors.green }, active && { backgroundColor: Colors.primary }]}>
@@ -80,7 +117,7 @@ export default function ProcessingScreen() {
           })}
         </View>
 
-        {!isComplete && !isFailed && <Text style={S.hint}>Check your phone for a USSD prompt and enter your PIN.</Text>}
+        {!isComplete && !isFailed && !isRefunded && displayIdx < 2 && <Text style={S.hint}>Check your phone for a USSD prompt and enter your PIN.</Text>}
 
         {isComplete && (
           <View style={S.btnRow}>
@@ -88,7 +125,7 @@ export default function ProcessingScreen() {
             <TouchableOpacity onPress={() => router.push(`/status/${ref}`)} style={S.btnPrimary}><Text style={S.btnTxt}>View Receipt</Text></TouchableOpacity>
           </View>
         )}
-        {isFailed && (
+        {(isFailed || isRefunded) && (
           <View style={S.btnRow}>
             <TouchableOpacity onPress={() => router.back()} style={S.btnOutline}><Text style={S.btnOutlineTxt}>Try Again</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={S.btnPrimary}><Text style={S.btnTxt}>Home</Text></TouchableOpacity>
