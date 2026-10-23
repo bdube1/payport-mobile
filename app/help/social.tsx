@@ -37,7 +37,7 @@ export default function SocialScreen() {
 const S = StyleSheet.create({
   body: { padding: 20, paddingTop: 24, gap: 12 },
   card: {
-    flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#fff',
+    flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: Colors.cardBg,
     borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.borderLight,
   },
   iconBadge: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

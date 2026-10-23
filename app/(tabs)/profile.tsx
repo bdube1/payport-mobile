@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, isDark, setThemeMode } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { isBiometricAvailable, getBiometricType } from '../../lib/biometric';
 import { isBiometricEnabled, setBiometricEnabled, saveBiometricCredentials } from '../../lib/auth';
@@ -81,6 +81,9 @@ export default function ProfileScreen() {
           <Text style={S.emptySub}>Sign in to view your profile and history</Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={S.btn}><Text style={S.btnTxt}>Sign In</Text></TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')} style={[S.btn, S.btnAccent]}><Text style={S.btnTxt}>Register</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setThemeMode(isDark ? 'light' : 'dark')} style={[S.btn, { backgroundColor: Colors.borderLight }]}>
+            <Text style={[S.btnTxt, { color: Colors.textPrimary }]}>{isDark ? 'Use light mode' : 'Use dark mode'}</Text>
+          </TouchableOpacity>
         </View>
       </GradientScreen>
     );
@@ -103,6 +106,12 @@ export default function ProfileScreen() {
         <View style={S.section}>
           {bioAvail && <Row label={`${bioType} Login`} toggle toggleVal={bioOn} onToggle={handleToggleBiometric} />}
           <Row label="Change PIN" onPress={() => router.push('/change-pin')} />
+        </View>
+
+        {/* Appearance */}
+        <Text style={S.sectionTitle}>Appearance</Text>
+        <View style={S.section}>
+          <Row label="Dark mode" toggle toggleVal={isDark} onToggle={(v: boolean) => setThemeMode(v ? 'dark' : 'light')} />
         </View>
 
         {/* Danger zone */}
@@ -183,14 +192,14 @@ const S = StyleSheet.create({
   rolePill: { backgroundColor: '#E8EAF6', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 4 },
   roleText: { fontSize: 12, color: Colors.primary, fontWeight: '700', fontFamily: 'Rubik_700Bold', textTransform: 'uppercase' },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary, fontFamily: 'Rubik_700Bold', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 20, marginBottom: 8, marginHorizontal: 16 },
-  section: { backgroundColor: '#fff', marginHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: Colors.borderLight, overflow: 'hidden' },
+  section: { backgroundColor: Colors.cardBg, marginHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: Colors.borderLight, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   rowLabel: { fontSize: 15, fontWeight: '500', color: Colors.textPrimary, fontFamily: 'Nunito_500Medium' },
   rowValue: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', marginTop: 2 },
   logoutBtn: { backgroundColor: Colors.accent, borderRadius: 24, paddingVertical: 16, alignItems: 'center' },
   logoutTxt: { color: '#fff', fontSize: 16, fontWeight: 'bold', fontFamily: 'Rubik_700Bold' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(9,30,62,0.55)', alignItems: 'center', justifyContent: 'center', padding: 32 },
-  modalCard: { backgroundColor: '#fff', borderRadius: 20, padding: 24, width: '100%' },
+  modalCard: { backgroundColor: Colors.cardBg, borderRadius: 20, padding: 24, width: '100%' },
   modalTitle: { fontSize: 17, fontWeight: '800', color: Colors.textPrimary, fontFamily: 'Rubik_800ExtraBold', marginBottom: 6 },
   modalSub: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', marginBottom: 16 },
   modalInput: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 18, letterSpacing: 4, textAlign: 'center', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },

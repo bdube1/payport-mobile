@@ -392,7 +392,7 @@ export default function DataScreen() {
           {/* 7. Wallet */}
           {network && (
             <>
-              {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={{ borderWidth: 1.5, borderColor: Colors.border, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 14, fontSize: 16, color: Colors.textPrimary, backgroundColor: '#fff', marginBottom: 4 }} /></>}
+              {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={{ borderWidth: 1.5, borderColor: Colors.border, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 14, fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.cardBg, marginBottom: 4 }} /></>}
             <Text style={S.lbl}>Payment Wallet Number</Text>
               <View style={S.phoneRow}>
                 <View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View>
@@ -509,7 +509,7 @@ export default function DataScreen() {
 const S = StyleSheet.create({
   scroll: { flex: 1 }, 
   body: { padding: 20 },
-  err: { backgroundColor: '#FFEBEE', borderRadius: 12, padding: 12, marginBottom: 16 },
+  err: { backgroundColor: Colors.errorBg, borderRadius: 12, padding: 12, marginBottom: 16 },
   errTxt: { color: Colors.red, fontSize: 14, fontFamily: 'Nunito_400Regular' },
   lbl: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', marginBottom: 8, marginTop: 18 },
   phoneRow: { flexDirection: 'row', borderWidth: 1.5, borderColor: Colors.border, borderRadius: 24, overflow: 'hidden', marginBottom: 6 },
@@ -517,11 +517,11 @@ const S = StyleSheet.create({
   pfxTxt: { color: '#fff', fontWeight: '700', fontSize: 14, fontFamily: 'Rubik_700Bold' },
   phoneIn: { flex: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: Colors.textPrimary, fontFamily: 'Nunito_400Regular' },
   networkRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
-  networkBtn: { flex: 1, paddingVertical: 6, borderRadius: 24, borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center', backgroundColor: '#fff', gap: 6 },
+  networkBtn: { flex: 1, paddingVertical: 6, borderRadius: 24, borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center', backgroundColor: Colors.cardBg, gap: 6 },
   networkLogo: { width: 34, height: 34 },
   networkBtnTxt: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   chipRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginBottom: 4 },
-  chip: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 24, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: '#fff' },
+  chip: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 24, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.cardBg },
   chipActive: { borderColor: Colors.primary, backgroundColor: Colors.primary },
   chipTxt: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   chipActiveTxt: { color: '#fff' },
@@ -533,7 +533,7 @@ const S = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: Colors.border,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.cardBg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -569,7 +569,7 @@ const S = StyleSheet.create({
   dropdownModal: {
     position: 'absolute',
     left: 20,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.cardBg,
     borderWidth: 1.5,
     borderColor: Colors.primary + '40',
     borderRadius: 12,
@@ -624,10 +624,10 @@ const S = StyleSheet.create({
   btnOutlineTxt: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   btnTxt: { color: '#fff', fontSize: 16, fontWeight: 'bold', fontFamily: 'Rubik_700Bold' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 44 },
+  sheet: { backgroundColor: Colors.cardBg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 44 },
   sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 20 },
   sheetTitle: { fontSize: 20, fontWeight: 'bold', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', marginBottom: 20 },
-  summaryBox: { backgroundColor: '#F9F9F9', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.borderLight, marginBottom: 20 },
+  summaryBox: { backgroundColor: Colors.subtleBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.borderLight, marginBottom: 20 },
   sumRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   sumLbl: { fontSize: 14, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular' },
   sumVal: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', textAlign: 'right', flex: 1, marginLeft: 12 },

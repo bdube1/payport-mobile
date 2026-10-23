@@ -191,6 +191,7 @@ export const transactionsApi = {
     { headers: { 'Idempotency-Key': idempotencyKey || newIdempotencyKey() } }),
 
   getStatus: (ref: string) => api.get(`/api/v1/transactions/${ref}`),
+  confirmOmariOtp: (ref: string, otp: string) => api.post(`/api/v1/transactions/${ref}/confirm-omari-otp`, { otp }),
   getOutcome: (ref: string, waitSeconds = 0) => api.get(`/api/v1/transactions/${ref}/outcome?waitSeconds=${waitSeconds}`),
   getTimeline: (ref: string) => api.get(`/api/v1/transactions/${ref}/timeline`),
   getMyHistory: (page = 0, size = 15) =>

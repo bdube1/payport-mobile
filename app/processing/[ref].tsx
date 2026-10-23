@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
@@ -41,6 +41,21 @@ export default function ProcessingScreen() {
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const dotsRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const hapticFired = useRef(false);
+  const [otp, setOtp] = useState('');
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpError, setOtpError] = useState('');
+
+  const submitOtp = async () => {
+    if (!otp.trim()) return;
+    setOtpBusy(true); setOtpError('');
+    try {
+      const r = await transactionsApi.confirmOmariOtp(ref, otp.trim());
+      setTx(r.data?.data || r.data);
+      setOtp('');
+    } catch (e: any) {
+      setOtpError(e?.response?.data?.message || e?.response?.data?.error?.message || 'The code could not be checked');
+    } finally { setOtpBusy(false); }
+  };
 
   const poll = async () => {
     try {
@@ -117,7 +132,29 @@ export default function ProcessingScreen() {
           })}
         </View>
 
-        {!isComplete && !isFailed && !isRefunded && displayIdx < 2 && <Text style={S.hint}>Check your phone for a USSD prompt and enter your PIN.</Text>}
+        {!isComplete && !isFailed && tx?.requiresOtpEntry && (
+          <View style={S.otpCard}>
+            <Text style={S.otpLbl}>Enter the code O'mari sent to your phone</Text>
+            {!!otpError && <Text style={S.otpErr}>{otpError}</Text>}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TextInput value={otp} onChangeText={t => setOtp(t.replace(/\s/g, ''))} keyboardType="number-pad" placeholder="Code"
+                placeholderTextColor={Colors.textSecondary} style={S.otpInput} maxLength={10} />
+              <TouchableOpacity onPress={submitOtp} disabled={otpBusy || !otp.trim()} style={[S.btnPrimary, { flex: 0, paddingHorizontal: 18, opacity: otpBusy ? 0.6 : 1 }]}>
+                <Text style={S.btnTxt}>{otpBusy ? '…' : 'Confirm'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {!isComplete && !isFailed && !!tx?.paymentCode && (
+          <View style={S.otpCard}>
+            <Text style={S.otpLbl}>Your InnBucks payment code</Text>
+            <Text style={S.code} selectable>{tx.paymentCode}</Text>
+            <Text style={S.hint}>Open the InnBucks app and approve this code.</Text>
+          </View>
+        )}
+
+        {!isComplete && !isFailed && !isRefunded && displayIdx < 2 && !tx?.requiresOtpEntry && !tx?.paymentCode && <Text style={S.hint}>Check your phone for a USSD prompt and enter your PIN.</Text>}
 
         {isComplete && (
           <View style={S.btnRow}>
@@ -137,13 +174,18 @@ export default function ProcessingScreen() {
 }
 
 const S = StyleSheet.create({
+  otpCard: { width: '100%', backgroundColor: Colors.cardBg, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: Colors.border },
+  otpLbl: { fontSize: 13, color: Colors.textPrimary, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
+  otpErr: { fontSize: 12.5, color: Colors.red, marginBottom: 8, textAlign: 'center' },
+  otpInput: { flex: 1, borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 18, letterSpacing: 4, color: Colors.textPrimary, backgroundColor: Colors.subtleBg },
+  code: { fontSize: 28, fontWeight: '800', letterSpacing: 4, color: Colors.textPrimary, textAlign: 'center', marginVertical: 6 },
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   icon: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   title: { fontSize: 22, fontWeight: 'bold', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', marginBottom: 8, textAlign: 'center' },
   sub: { fontSize: 14, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', textAlign: 'center', marginBottom: 12, lineHeight: 20 },
-  refChip: { backgroundColor: '#F0F4FF', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6, marginBottom: 24, borderWidth: 1, borderColor: '#C5CAE9' },
+  refChip: { backgroundColor: Colors.subtleBg, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6, marginBottom: 24, borderWidth: 1, borderColor: '#C5CAE9' },
   refTxt: { fontSize: 12, color: Colors.primary, fontFamily: 'Nunito_400Regular' },
-  stepsCard: { width: '100%', backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: Colors.borderLight },
+  stepsCard: { width: '100%', backgroundColor: Colors.cardBg, borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: Colors.borderLight },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   dot: { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.divider, alignItems: 'center', justifyContent: 'center' },
   stepLbl: { flex: 1, fontSize: 14, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular' },

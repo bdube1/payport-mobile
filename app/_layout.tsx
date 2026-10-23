@@ -19,6 +19,7 @@ import {
 } from '@expo-google-fonts/nunito';
 import { useAuthStore } from '../store/authStore';
 import { listenForNotificationTaps } from '../lib/push';
+import { Colors, isDark } from '../constants/colors';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -58,9 +59,9 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="airtime/index" options={{ headerShown: false, presentation: 'card' }} />
