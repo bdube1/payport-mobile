@@ -56,10 +56,10 @@ export default function TrackOrderScreen() {
 const S = StyleSheet.create({
   body: { padding: 20 },
   hint: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', marginBottom: 20 },
-  err: { backgroundColor: '#FFEBEE', borderRadius: 12, padding: 12, marginBottom: 12 },
+  err: { backgroundColor: Colors.errorBg, borderRadius: 12, padding: 12, marginBottom: 12 },
   errTxt: { color: Colors.red, fontSize: 14, fontFamily: 'Nunito_400Regular' },
   lbl: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', marginBottom: 8 },
-  input: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 14, fontSize: 16, color: Colors.textPrimary, backgroundColor: '#fff', fontFamily: 'Nunito_400Regular', marginBottom: 20 },
+  input: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 14, fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.cardBg, fontFamily: 'Nunito_400Regular', marginBottom: 20 },
   btn: { flexDirection: 'row', gap: 8, backgroundColor: Colors.primary, borderRadius: 24, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   btnTxt: { color: '#fff', fontSize: 16, fontWeight: 'bold', fontFamily: 'Rubik_700Bold' },
   tipCard: { backgroundColor: 'rgba(6,163,218,0.06)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(6,163,218,0.15)' },

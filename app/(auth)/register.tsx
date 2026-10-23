@@ -104,23 +104,23 @@ export default function RegisterScreen() {
 }
 
 const S = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: '#fff' },
+  root:   { flex: 1, backgroundColor: Colors.cardBg },
   scroll: { flexGrow: 1, padding: 32, justifyContent: 'center' },
 
   logoImg: { width: 82, height: 120, alignSelf: 'center', marginBottom: 24 },
 
   title: { fontSize: 24, fontWeight: 'bold', color: Colors.primary, textAlign: 'center', marginBottom: 24, fontFamily: 'Rubik_700Bold' },
 
-  errBox: { backgroundColor: '#FFEBEE', borderRadius: 12, padding: 12, marginBottom: 16 },
+  errBox: { backgroundColor: Colors.errorBg, borderRadius: 12, padding: 12, marginBottom: 16 },
   errTxt: { color: Colors.red, fontSize: 14, fontFamily: 'Nunito_400Regular' },
 
   lbl: { fontSize: 14, color: Colors.textPrimary, fontFamily: 'Nunito_400Regular', marginBottom: 8, marginTop: 16 },
   input: {
-    backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#DDDDDD',
+    backgroundColor: Colors.cardBg, borderWidth: 1.5, borderColor: Colors.inputBorder,
     borderRadius: 24, paddingHorizontal: 18, paddingVertical: 14,
     fontSize: 16, color: Colors.textPrimary, fontFamily: 'Nunito_400Regular', marginBottom: 4,
   },
-  pinRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#DDDDDD', borderRadius: 24 },
+  pinRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.cardBg, borderWidth: 1.5, borderColor: Colors.inputBorder, borderRadius: 24 },
   eyeBtn:  { paddingHorizontal: 14, paddingVertical: 14 },
 
   btnRegister: {

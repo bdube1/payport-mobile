@@ -39,7 +39,7 @@ const S = StyleSheet.create({
   body: { padding: 20, paddingTop: 24 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 },
   card: {
-    width: '47%', backgroundColor: '#fff', borderRadius: 16, paddingVertical: 26, paddingHorizontal: 10,
+    width: '47%', backgroundColor: Colors.cardBg, borderRadius: 16, paddingVertical: 26, paddingHorizontal: 10,
     alignItems: 'center', gap: 12, borderWidth: 1.5, borderColor: 'rgba(6,163,218,0.25)',
     shadowColor: '#091E3E', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1,
   },

@@ -51,7 +51,7 @@ const S = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '800', color: Colors.textPrimary, fontFamily: 'Rubik_800ExtraBold', marginBottom: 10 },
   lede: { fontSize: 14, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', lineHeight: 22, marginBottom: 24 },
   valuesRow: { gap: 12, marginBottom: 20 },
-  valueCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.borderLight, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  valueCard: { backgroundColor: Colors.cardBg, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.borderLight, flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBadge: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(6,163,218,0.1)', alignItems: 'center', justifyContent: 'center' },
   valueTitle: { fontSize: 14.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', marginBottom: 2 },
   valueDesc: { fontSize: 12.5, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular' },

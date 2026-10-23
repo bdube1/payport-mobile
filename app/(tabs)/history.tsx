@@ -90,7 +90,7 @@ const S = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', textAlign: 'center', marginBottom: 20 },
   btn: { backgroundColor: Colors.primary, borderRadius: 24, paddingHorizontal: 32, paddingVertical: 14 },
   btnTxt: { color: '#fff', fontWeight: '700', fontFamily: 'Rubik_700Bold', fontSize: 15 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: Colors.borderLight },
+  card: { backgroundColor: Colors.cardBg, borderRadius: 12, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: Colors.borderLight },
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   txName: { flex: 1, fontSize: 15, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   txAmount: { fontSize: 15, fontWeight: '700', fontFamily: 'Rubik_700Bold' },

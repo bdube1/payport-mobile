@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     marginBottom: 28, fontFamily: 'Rubik_700Bold',
   },
 
-  errorBox:  { backgroundColor: '#FFEBEE', borderRadius: 4, padding: 12, marginBottom: 16 },
+  errorBox:  { backgroundColor: Colors.errorBg, borderRadius: 4, padding: 12, marginBottom: 16 },
   errorText: { color: Colors.red, fontSize: 14, fontFamily: 'Nunito_400Regular' },
 
   label: {
@@ -274,8 +274,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular', marginBottom: 6,
   },
   input: {
-    backgroundColor: '#fff',
-    borderWidth: 1, borderColor: '#DDDDDD',
+    backgroundColor: Colors.cardBg,
+    borderWidth: 1, borderColor: Colors.inputBorder,
     borderRadius: 24,                   // round edges
     paddingHorizontal: 18, paddingVertical: 14,
     fontSize: 16, color: Colors.textPrimary,
@@ -285,8 +285,8 @@ const styles = StyleSheet.create({
   pinRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1, borderColor: '#DDDDDD',
+    backgroundColor: Colors.cardBg,
+    borderWidth: 1, borderColor: Colors.inputBorder,
     borderRadius: 24,                   // round edges
     marginBottom: 0,
     paddingRight: 4,

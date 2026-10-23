@@ -66,7 +66,7 @@ const S = StyleSheet.create({
   body: { padding: 20 },
   label: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, fontFamily: 'Rubik_600SemiBold', marginBottom: 8, marginTop: 16 },
   input: {
-    backgroundColor: '#fff', borderRadius: 12, padding: 16, fontSize: 20, letterSpacing: 8,
+    backgroundColor: Colors.cardBg, borderRadius: 12, padding: 16, fontSize: 20, letterSpacing: 8,
     borderWidth: 1, borderColor: Colors.borderLight, fontFamily: 'Rubik_700Bold', color: Colors.textPrimary,
   },
   btn: { backgroundColor: Colors.primary, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 28 },

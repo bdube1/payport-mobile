@@ -18,7 +18,7 @@ export default function Card({ children, style, padded = true }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.cardBg,
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: Colors.borderLight,

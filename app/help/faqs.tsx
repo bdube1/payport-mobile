@@ -30,7 +30,7 @@ export default function FaqsScreen() {
 
 const S = StyleSheet.create({
   body: { padding: 20, paddingTop: 24, gap: 10 },
-  card: { backgroundColor: '#fff', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.borderLight },
+  card: { backgroundColor: Colors.cardBg, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.borderLight },
   q: { fontSize: 14.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', marginBottom: 6 },
   a: { fontSize: 13.5, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', lineHeight: 20 },
 });

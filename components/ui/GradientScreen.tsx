@@ -13,7 +13,7 @@ type Props = {
 export default function GradientScreen({ children, edges = ['top'] }: Props) {
   return (
     <LinearGradient
-      colors={['#EAF6FC', '#F6FAFD', Colors.background]}
+      colors={[Colors.gradientTop, Colors.gradientMid, Colors.background]}
       locations={[0, 0.35, 1]}
       style={styles.root}
     >

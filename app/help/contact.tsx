@@ -40,7 +40,7 @@ export default function ContactScreen() {
 const S = StyleSheet.create({
   body: { padding: 20, paddingTop: 24, gap: 16 },
   card: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 22, alignItems: 'center', gap: 14,
+    backgroundColor: Colors.cardBg, borderRadius: 16, padding: 22, alignItems: 'center', gap: 14,
     borderWidth: 1.5, borderColor: 'rgba(6,163,218,0.25)',
     shadowColor: '#091E3E', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1,
   },
