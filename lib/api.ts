@@ -221,7 +221,17 @@ export function visibleMethods<T extends { code: string }>(methods: T[], signedI
   return signedIn ? methods : methods.filter(m => m.code !== 'WALLET');
 }
 
-// ── Wallet (Phase 8; switched on by PayPort when licensed) ────────────────
+// Countries and currencies PayPort serves (public).
+export async function liveCurrencies(): Promise<string[]> {
+  try {
+    const r = await api.get('/api/v1/markets');
+    const m: any[] = r.data?.data || r.data || [];
+    const c = [...new Set(m.flatMap((x: any) => (x.currencies || []).filter((y: any) => y.live).map((y: any) => y.code)))] as string[];
+    return c.length ? c : ['USD', 'ZWG'];
+  } catch { return ['USD', 'ZWG']; }
+}
+
+// ── Wallet ──────────────────────────────────────────────────────────────
 export const walletApi = {
   list: () => api.get('/api/v1/wallet'),
   open: (currency: string) => api.post('/api/v1/wallet/open', { currency }),

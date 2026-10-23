@@ -5,7 +5,7 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
-import { walletApi, productsApi, startPayment, paymentError, generateReference, formatAmount, normalizePhone } from '../../lib/api';
+import { walletApi, productsApi, startPayment, paymentError, generateReference, formatAmount, normalizePhone, liveCurrencies } from '../../lib/api';
 
 type W = { walletRef: string; currency: string; balanceMinor: number; status: string; dailyOutMinor?: number; usedTodayMinor?: number };
 type Tab = 'topup' | 'send' | 'convert' | 'cashout' | 'statement';
@@ -114,7 +114,9 @@ function Btn({ title, onPress, disabled, color = Colors.green }: any) {
 }
 
 function OpenWallet({ existing, busy, onOpen }: { existing: string[]; busy: boolean; onOpen: (c: string) => void }) {
-  const options = ['USD', 'ZWG', 'ZMW'].filter((c) => !existing.includes(c));
+  const [all, setAll] = useState<string[]>([]);
+  useEffect(() => { liveCurrencies().then(setAll); }, []);
+  const options = all.filter((c) => !existing.includes(c));
   if (options.length === 0) return null;
   return <View style={S.wcard}>
     <Text style={S.wsub}>Open a wallet</Text>
