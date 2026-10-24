@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 interface CardProps {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ export default function Card({ children, style, padded = true }: CardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   card: {
     backgroundColor: Colors.cardBg,
     borderRadius: 20,
@@ -31,4 +31,4 @@ const styles = StyleSheet.create({
   padded: {
     padding: 24,
   },
-});
+}));

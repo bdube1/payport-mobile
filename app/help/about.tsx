@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 const VALUES = [
   { icon: 'flash-outline' as const,   title: 'Fast',    desc: 'Most transactions complete in seconds, not minutes.' },
@@ -46,7 +46,7 @@ export default function AboutScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   body: { padding: 20, paddingTop: 24 },
   title: { fontSize: 20, fontWeight: '800', color: Colors.textPrimary, fontFamily: 'Rubik_800ExtraBold', marginBottom: 10 },
   lede: { fontSize: 14, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', lineHeight: 22, marginBottom: 24 },
@@ -58,4 +58,4 @@ const S = StyleSheet.create({
   addressCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: 'rgba(6,163,218,0.06)', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: 'rgba(6,163,218,0.15)' },
   addressTitle: { fontSize: 13.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', marginBottom: 2 },
   addressLine: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular' },
-});
+}));

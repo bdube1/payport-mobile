@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 import { normalizePhone } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 
@@ -103,7 +103,7 @@ export default function RegisterScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   root:   { flex: 1, backgroundColor: Colors.cardBg },
   scroll: { flexGrow: 1, padding: 32, justifyContent: 'center' },
 
@@ -130,4 +130,4 @@ const S = StyleSheet.create({
   btnTxt:  { color: '#fff', fontSize: 16, fontWeight: 'bold', fontFamily: 'Rubik_700Bold' },
   backBtn: { paddingVertical: 12, alignItems: 'center' },
   backTxt: { fontSize: 14, fontWeight: 'bold', color: Colors.primary, fontFamily: 'Rubik_700Bold' },
-});
+}));

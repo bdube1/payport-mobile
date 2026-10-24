@@ -59,6 +59,12 @@
           "image": "./assets/logo-mark-transparent.png",
           "imageWidth": 160
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "PayPort uses the camera to scan merchant QR codes."
+        }
       ]
     ],
     "experiments": {

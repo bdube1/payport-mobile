@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityInd
 import { useRouter } from 'expo-router';
 import GradientScreen from '../components/ui/GradientScreen';
 import AppBar from '../components/ui/AppBar';
-import { Colors } from '../constants/colors';
+import { Colors, themed } from '../constants/colors';
 import { authApi } from '../lib/api';
 
 export default function ChangePinScreen() {
@@ -62,7 +62,7 @@ export default function ChangePinScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   body: { padding: 20 },
   label: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, fontFamily: 'Rubik_600SemiBold', marginBottom: 8, marginTop: 16 },
   input: {
@@ -71,4 +71,4 @@ const S = StyleSheet.create({
   },
   btn: { backgroundColor: Colors.primary, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 28 },
   btnTxt: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: 'Rubik_700Bold' },
-});
+}));

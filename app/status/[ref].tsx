@@ -6,7 +6,7 @@ import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 import { transactionsApi, formatAmount } from '../../lib/api';
 
 function fmtDate(val: any) {
@@ -132,7 +132,7 @@ export default function StatusScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   centre: { flex: 1, padding: 40, alignItems: 'center', justifyContent: 'center' },
   emptyTxt: { fontSize: 16, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular' },
   body: { padding: 16 },
@@ -155,4 +155,4 @@ const S = StyleSheet.create({
   btnOutlineTxt: { color: Colors.primary, fontWeight: '700', fontFamily: 'Rubik_700Bold' },
   btnPrimary: { flex: 1, paddingVertical: 14, borderRadius: 24, backgroundColor: Colors.primary, alignItems: 'center' },
   btnTxt: { color: '#fff', fontWeight: '700', fontFamily: 'Rubik_700Bold' },
-});
+}));

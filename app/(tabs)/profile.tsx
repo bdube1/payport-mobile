@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors, isDark, setThemeMode } from '../../constants/colors';
+import { Colors, isDark, setThemeMode, themed } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { isBiometricAvailable, getBiometricType } from '../../lib/biometric';
 import { isBiometricEnabled, setBiometricEnabled, saveBiometricCredentials } from '../../lib/auth';
@@ -177,7 +177,7 @@ export default function ProfileScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   emptyEmoji: { fontSize: 56 }, emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', textAlign: 'center' },
   emptySub: { fontSize: 14, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', textAlign: 'center' },
@@ -204,4 +204,4 @@ const S = StyleSheet.create({
   modalSub: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', marginBottom: 16 },
   modalInput: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 18, letterSpacing: 4, textAlign: 'center', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   modalError: { fontSize: 12.5, color: Colors.red, fontFamily: 'Nunito_400Regular', marginTop: 8 },
-});
+}));

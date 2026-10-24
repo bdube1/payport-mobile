@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 import { normalizePhone, beneficiariesApi } from '../../lib/api';
 import { fetchActiveBillers } from '../../lib/billers';
 import { useAuthStore } from '../../store/authStore';
@@ -258,7 +258,7 @@ export default function BeneficiariesScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', textAlign: 'center' },
   emptySub: { fontSize: 14, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', textAlign: 'center' },
@@ -301,4 +301,4 @@ const S = StyleSheet.create({
   billerChipTxt: { fontSize: 12.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   saveBtn: { backgroundColor: Colors.primary, borderRadius: 24, paddingVertical: 16, alignItems: 'center' },
   saveTxt: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: 'Rubik_700Bold' },
-});
+}));

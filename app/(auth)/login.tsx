@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 import { normalizePhone } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { isBiometricAvailable, getBiometricType, authenticateWithBiometric } from '../../lib/biometric';
@@ -244,7 +244,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root:  { flex: 1, backgroundColor: Colors.background },
 
   scroll: {
@@ -337,4 +337,4 @@ const styles = StyleSheet.create({
   },
   bioHint: { fontSize: 13.5, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', marginTop: 16 },
   usePinText: { fontSize: 14, fontWeight: '700', color: Colors.primary, fontFamily: 'Rubik_700Bold' },
-});
+}));

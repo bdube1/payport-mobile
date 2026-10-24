@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 import { transactionsApi } from '../../lib/api';
 
 const STEPS = [
@@ -173,7 +173,7 @@ export default function ProcessingScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   otpCard: { width: '100%', backgroundColor: Colors.cardBg, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: Colors.border },
   otpLbl: { fontSize: 13, color: Colors.textPrimary, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
   otpErr: { fontSize: 12.5, color: Colors.red, marginBottom: 8, textAlign: 'center' },
@@ -195,4 +195,4 @@ const S = StyleSheet.create({
   btnOutlineTxt: { color: Colors.primary, fontWeight: '700', fontFamily: 'Rubik_700Bold' },
   btnPrimary: { flex: 2, paddingVertical: 14, borderRadius: 24, backgroundColor: Colors.primary, alignItems: 'center' },
   btnTxt: { color: '#fff', fontWeight: '700', fontFamily: 'Rubik_700Bold' },
-});
+}));
