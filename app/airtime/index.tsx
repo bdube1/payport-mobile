@@ -5,7 +5,7 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
 import { Colors, themed } from '../../constants/colors';
-import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../../lib/useCharges';
+import { useCharge, methodLabel } from '../../lib/useCharges';
 import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, visibleMethods } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
@@ -95,7 +95,6 @@ export default function AirtimeScreen() {
   const pm = paymentMethods.find((m: any) => m.code === paymentMethod);
   const amtCents = customAmt ? Math.round(parseFloat(customAmt) * 100) : 0;
   const quote = useCharge(network?.networkCode ? `AIRTIME_${network.networkCode}` : null, currency, amtCents);
-  const balances = useWalletBalances();
   const payTotal = quote ? quote.totalCents : amtCents;
 
   const handleReview = () => {
@@ -105,7 +104,7 @@ export default function AirtimeScreen() {
     if (!currency) { setError('Select a currency'); return; }
     if (!customAmt || amtCents < 1) { setError('Enter an amount'); return; }
     if (!paymentMethod) { setError('Select a payment method'); return; }
-    if (normalizePhone(paymentPhone).length < 12) { setError('Enter your wallet number'); return; }
+    if (paymentMethod === 'WALLET' ? walletPin.length < 4 : normalizePhone(paymentPhone).length < 12) { setError(paymentMethod === 'WALLET' ? 'Enter your PIN' : 'Enter your wallet number'); return; }
     setShowConfirm(true);
   };
 
@@ -116,7 +115,8 @@ export default function AirtimeScreen() {
     }
     setLoading(true);
     const ref = generateReference('MOB');
-    const payPhone = normalizePhone(paymentPhone);
+    const me = useAuthStore.getState().user;
+    const payPhone = paymentMethod === 'WALLET' && me ? normalizePhone(me.phone) : normalizePhone(paymentPhone);
     try {
       await startPayment({ reference: ref, productTypeCode: `AIRTIME_${network.networkCode}`, recipientIdentifier: normalizePhone(recipientPhone), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' },
         { paymentMethodCode: paymentMethod, customerPhone: payPhone, pin: walletPin });
@@ -148,10 +148,10 @@ export default function AirtimeScreen() {
             {currencies.length > 0 && <><Text style={S.lbl}>Currency</Text><View style={S.chipRow}>{currencies.map(c => <TouchableOpacity key={c} onPress={() => setCurrency(c)} style={[S.chip, currency === c && S.chipActive]}><Text style={[S.chipTxt, currency === c && S.chipActiveTxt]}>{c}</Text></TouchableOpacity>)}</View></>}
             <Text style={S.lbl}>Amount{currency ? ` (${currency})` : ''}</Text>
             <TextInput value={customAmt} onChangeText={setCustomAmt} placeholder="e.g. 5.00" placeholderTextColor={Colors.textSecondary} keyboardType="decimal-pad" style={S.input} />
-            {paymentMethods.length > 0 && <><Text style={S.lbl}>Payment Method</Text><View style={S.chipRow}>{paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m, balances, currency)}</Text></TouchableOpacity>)}</View></>}
+            {paymentMethods.length > 0 && <><Text style={S.lbl}>Payment Method</Text><View style={S.chipRow}>{paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m)}</Text></TouchableOpacity>)}</View></>}
             {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={S.input} /></>}
-            <Text style={S.lbl}>Payment Wallet Number</Text>
-            <View style={S.phoneRow}><View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View><TextInput value={paymentPhone} onChangeText={setPaymentPhone} placeholder="Wallet for USSD prompt" placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} /></View>
+            {paymentMethod !== 'WALLET' && <><Text style={S.lbl}>Payment Wallet Number</Text>
+            <View style={S.phoneRow}><View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View><TextInput value={paymentPhone} onChangeText={setPaymentPhone} placeholder="Wallet for USSD prompt" placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} /></View></>}
             <TouchableOpacity style={S.btnPrimary} onPress={handleReview}><Text style={S.btnTxt}>Confirm and Pay</Text></TouchableOpacity>
           </>}
         </View>
@@ -161,7 +161,7 @@ export default function AirtimeScreen() {
         <View style={S.overlay}><View style={S.sheet}><View style={S.sheetHandle} />
           <Text style={S.sheetTitle}>Confirm payment</Text>
           <View style={S.summaryBox}>
-            {[['Service', `${network?.networkName || ''} Airtime`], ['Recipient', normalizePhone(recipientPhone)], ['Amount', formatAmount(amtCents, currency)], ...chargeRows(quote, currency), ['Pay via', pm ? methodLabel(pm, balances, currency) : paymentMethod], ...(paymentMethod === 'WALLET' ? [] : [['Wallet', normalizePhone(paymentPhone)]])].map(([l, v]) => <View key={l} style={S.sumRow}><Text style={S.sumLbl}>{l}</Text><Text style={S.sumVal}>{v}</Text></View>)}
+            {[['Service', `${network?.networkName || ''} Airtime`], ['Recipient', normalizePhone(recipientPhone)], ['Amount', formatAmount(payTotal, currency)], ['Pay via', pm ? methodLabel(pm) : paymentMethod], ...(paymentMethod === 'WALLET' ? [] : [['Wallet', normalizePhone(paymentPhone)]])].map(([l, v]) => <View key={l} style={S.sumRow}><Text style={S.sumLbl}>{l}</Text><Text style={S.sumVal}>{v}</Text></View>)}
           </View>
           <View style={S.modalBtns}>
             <TouchableOpacity style={S.btnOutline} onPress={() => setShowConfirm(false)}><Text style={S.btnOutlineTxt}>Cancel</Text></TouchableOpacity>

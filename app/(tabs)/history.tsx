@@ -103,15 +103,14 @@ export default function HistoryScreen() {
               <TouchableOpacity onPress={() => setOpen(open === item.reference ? null : item.reference)} style={S.card} activeOpacity={0.85}>
                 <View style={S.cardRow}>
                   <Text style={S.txName} numberOfLines={1}>{item.productName || 'Transaction'}</Text>
-                  <Text style={[S.txAmount, { color: Colors.primary }]}>{formatAmount(item.amountCents, item.currency)}</Text>
+                  <Text style={[S.txAmount, { color: Colors.primary }]}>{formatAmount(item.totalCents ?? item.amountCents, item.currency)}</Text>
                 </View>
                 <View style={S.cardRow}>
                   <Text style={S.txDate}>{item.recipientIdentifier}  ·  {fmtDate(item.createdAt)}</Text>
                   <Text style={[S.txStatus, { color: sc }]}>{item.status.replace(/_/g,' ')}</Text>
                 </View>
                 {open === item.reference ? (
-                  <Details items={[['Reference', item.reference], ['What', item.productName], ['To', item.recipientIdentifier], ['Amount', formatAmount(item.amountCents, item.currency)],
-                    ...(item.chargeCents || item.taxCents ? [['Charge', formatAmount((item.chargeCents || 0) + (item.taxCents || 0), item.currency)], ['Total paid', formatAmount(item.totalCents, item.currency)]] as [string, any][] : []),
+                  <Details items={[['Reference', item.reference], ['What', item.productName], ['To', item.recipientIdentifier], ['Amount', formatAmount(item.totalCents ?? item.amountCents, item.currency)],
                     ['Paid with', METHOD[item.paymentMethodCode] || item.paymentMethodCode], ['Status', item.status.replace(/_/g, ' ')], ['Date', full(item.createdAt || item.initiatedAt)],
                     ['Token', item.voucherToken || item.token]]}>
                     <TouchableOpacity onPress={() => router.push(`/status/${item.reference}`)}><Text style={S.link}>Track this order ›</Text></TouchableOpacity>

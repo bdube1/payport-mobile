@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api, { walletApi, formatAmount } from './api';
+import api, { walletApi } from './api';
 import { useAuthStore } from '../store/authStore';
 
 export type Quote = { chargeCents: number; taxCents: number; totalCents: number };
@@ -34,18 +34,7 @@ export function useWalletBalances(): Record<string, number> {
   return b;
 }
 
-/** "PayPort Wallet · USD 12.00" for the wallet option. */
-export function methodLabel(m: { code: string; name: string }, balances: Record<string, number>, currency: string) {
-  if (m.code !== 'WALLET') return m.name;
-  const bal = currency && balances[currency] != null ? ` · ${formatAmount(balances[currency], currency)}` : '';
-  return `PayPort Wallet${bal}`;
-}
-
-/** Summary rows for the charge, when there is one. */
-export function chargeRows(q: Quote | null, currency: string): [string, string][] {
-  if (!q || !(q.chargeCents || q.taxCents)) return [];
-  const rows: [string, string][] = [['Charge', formatAmount(q.chargeCents, currency)]];
-  if (q.taxCents) rows.push(['Tax', formatAmount(q.taxCents, currency)]);
-  rows.push(['Total', formatAmount(q.totalCents, currency)]);
-  return rows;
+/** The option's name ("PayPort Wallet" for the wallet; balances are shown only on the home screen). */
+export function methodLabel(m: { code: string; name: string }) {
+  return m.code === 'WALLET' ? 'PayPort Wallet' : m.name;
 }

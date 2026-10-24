@@ -63,7 +63,9 @@ function AddCard({ visible, form, wallets, schemes, onClose, onDone }: { visible
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const ref = walletRef || wallets[0]?.walletRef || '';
+  // ZimSwitch cards are linked to a ZWG wallet.
+  const usable = wallets.filter((w) => scheme !== 'ZIMSWITCH' || w.currency === 'ZWG');
+  const ref = usable.some((w) => w.walletRef === walletRef) ? walletRef : usable[0]?.walletRef || '';
   const ok = !!ref && nickname.trim().length > 0 && pin.length >= 4 && (form === 'VIRTUAL' || address.trim().length >= 5) && !busy;
   const submit = async () => {
     setBusy(true); setError('');
@@ -80,15 +82,15 @@ function AddCard({ visible, form, wallets, schemes, onClose, onDone }: { visible
         <View style={S.sheet}>
           <Text style={S.sheetTitle}>New {form === 'VIRTUAL' ? 'virtual' : 'physical'} card</Text>
           {error ? <Text style={S.err}>{error}</Text> : null}
-          <Text style={S.lbl}>Wallet</Text>
-          <View style={S.chips}>{wallets.map((w) => (
-            <TouchableOpacity key={w.walletRef} onPress={() => setWalletRef(w.walletRef)} style={[S.chip, ref === w.walletRef && S.chipOn]}>
-              <Text style={[S.chipTxt, ref === w.walletRef && { color: '#fff' }]}>{w.currency} · {w.walletRef}</Text>
-            </TouchableOpacity>))}</View>
           <Text style={S.lbl}>Card</Text>
           <View style={S.chips}>{schemes.map((s) => (
             <TouchableOpacity key={s} onPress={() => setScheme(s)} style={[S.chip, scheme === s && S.chipOn]}>
               <Text style={[S.chipTxt, scheme === s && { color: '#fff' }]}>{s === 'ZIMSWITCH' ? 'ZimSwitch' : 'VISA'}</Text>
+            </TouchableOpacity>))}</View>
+          <Text style={S.lbl}>Wallet</Text>
+          <View style={S.chips}>{usable.map((w) => (
+            <TouchableOpacity key={w.walletRef} onPress={() => setWalletRef(w.walletRef)} style={[S.chip, ref === w.walletRef && S.chipOn]}>
+              <Text style={[S.chipTxt, ref === w.walletRef && { color: '#fff' }]}>{w.currency} · {w.walletRef}</Text>
             </TouchableOpacity>))}</View>
           <Text style={S.lbl}>Nickname</Text>
           <TextInput value={nickname} onChangeText={setNickname} maxLength={40} style={S.input} placeholderTextColor={Colors.textSecondary} />
