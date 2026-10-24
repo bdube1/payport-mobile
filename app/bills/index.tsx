@@ -6,7 +6,7 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
 import { Colors, themed } from '../../constants/colors';
-import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../../lib/useCharges';
+import { useCharge, methodLabel } from '../../lib/useCharges';
 import { startPayment, paymentError, billersApi, productsApi, normalizePhone, formatAmount, generateReference, visibleMethods } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { fetchActiveBillers, getFallbackIcon, Biller } from '../../lib/billers';
@@ -56,7 +56,9 @@ export default function BillsScreen() {
     }
   }, [billers, prefillBillerCode]);
 
-  const selectBiller = (b: any) => { setBiller(b); setAccountRef(''); setCustomerInfo(null); setAmount(''); setError(''); };
+  // A biller opens its own page; the list shows only when no biller is chosen.
+  const single = !!prefillBillerCode;
+  const selectBiller = (b: any) => router.push({ pathname: '/bills', params: { biller: b.code } } as any);
 
   const lookupCustomer = async () => {
     if (!accountRef.trim()) { setError('Enter the account/meter number'); return; }
@@ -77,7 +79,6 @@ export default function BillsScreen() {
   const pm = paymentMethods.find((m: any) => m.code === paymentMethod);
   const amtCents = amount ? Math.round(parseFloat(amount) * 100) : 0;
   const quote = useCharge(biller?.productCode, currency, amtCents);
-  const balances = useWalletBalances();
   const payTotal = quote ? quote.totalCents : amtCents;
 
   const handleReview = () => {
@@ -86,7 +87,7 @@ export default function BillsScreen() {
     if (!accountRef.trim()) { setError('Enter the account number'); return; }
     if (!amount || amtCents < 1) { setError('Enter a valid amount'); return; }
     if (!paymentMethod) { setError('Select a payment method'); return; }
-    if (normalizePhone(paymentPhone).length < 12) { setError('Enter your wallet number'); return; }
+    if (paymentMethod === 'WALLET' ? walletPin.length < 4 : normalizePhone(paymentPhone).length < 12) { setError(paymentMethod === 'WALLET' ? 'Enter your PIN' : 'Enter your wallet number'); return; }
     setShowConfirm(true);
   };
 
@@ -96,7 +97,8 @@ export default function BillsScreen() {
     }
     setLoading(true);
     const ref = generateReference('MOB');
-    const payPhone = normalizePhone(paymentPhone);
+    const me = useAuthStore.getState().user;
+    const payPhone = paymentMethod === 'WALLET' && me ? normalizePhone(me.phone) : normalizePhone(paymentPhone);
     try {
       await startPayment({ reference: ref, productTypeCode: biller.productCode, recipientIdentifier: accountRef.trim(), amountCents: amtCents, currency, customerPhone: payPhone, channel: 'MOB' },
         { paymentMethodCode: paymentMethod, customerPhone: payPhone, pin: walletPin });
@@ -110,12 +112,20 @@ export default function BillsScreen() {
 
   return (
     <GradientScreen>
-      <AppBar title="Pay Bills" showBack />
+      <AppBar title={single && biller ? biller.name : 'Pay Bills'} showBack />
       <ScrollView style={S.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={S.body}>
           {error !== '' && <View style={S.err}><Text style={S.errTxt}>{error}</Text></View>}
 
           {/* 1. Biller */}
+          {single ? (billersLoading ? <View style={S.billersLoading}><ActivityIndicator color={Colors.primary} /></View> : biller ? (
+            <View style={[S.billerHead, { borderColor: biller.color }]}>
+              {biller.fullLogoUrl && !logoError[biller.code]
+                ? <Image source={{ uri: biller.fullLogoUrl }} style={S.billerLogo} resizeMode="contain" onError={() => setLogoError(p => ({ ...p, [biller.code]: true }))} />
+                : <View style={[S.billerIconBadge, { backgroundColor: `${biller.color}20` }]}><Ionicons name={getFallbackIcon(biller.code)} size={20} color={biller.color} /></View>}
+              <Text style={[S.billerHeadName, { color: biller.color }]}>{biller.name}</Text>
+            </View>
+          ) : <View style={S.billersEmpty}><Text style={S.billersEmptyTxt}>This biller is not available at the moment</Text></View>) : <>
           <Text style={S.lbl}>Select Biller</Text>
           {billersLoading ? (
             <View style={S.billersLoading}><ActivityIndicator color={Colors.primary} /></View>
@@ -147,8 +157,9 @@ export default function BillsScreen() {
               })}
             </View>
           )}
+          </>}
 
-          {biller && <>
+          {single && biller && <>
             {/* 2. Account number */}
             <Text style={S.lbl}>{biller.field}</Text>
             <View style={S.lookupRow}>
@@ -183,14 +194,14 @@ export default function BillsScreen() {
             {paymentMethods.length > 0 && <>
               <Text style={S.lbl}>Payment Method</Text>
               <View style={S.chipRow}>
-                {paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m, balances, currency)}</Text></TouchableOpacity>)}
+                {paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m)}</Text></TouchableOpacity>)}
               </View>
             </>}
 
             {/* 6. Wallet */}
             {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={S.input} /></>}
-            <Text style={S.lbl}>Payment Wallet Number</Text>
-            <View style={S.phoneRow}><View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View><TextInput value={paymentPhone} onChangeText={setPaymentPhone} placeholder="Wallet for USSD prompt" placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} /></View>
+            {paymentMethod !== 'WALLET' && <><Text style={S.lbl}>Payment Wallet Number</Text>
+            <View style={S.phoneRow}><View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View><TextInput value={paymentPhone} onChangeText={setPaymentPhone} placeholder="Wallet for USSD prompt" placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} /></View></>}
             <TouchableOpacity style={S.btnPrimary} onPress={handleReview}><Text style={S.btnTxt}>Confirm and Pay</Text></TouchableOpacity>
           </>}
         </View>
@@ -201,7 +212,7 @@ export default function BillsScreen() {
         <View style={S.overlay}><View style={S.sheet}><View style={S.sheetHandle} />
           <Text style={S.sheetTitle}>Confirm Payment</Text>
           <View style={S.summaryBox}>
-            {[['Biller', biller?.name], [biller?.field || 'Account', accountRef], customerInfo?.customerName ? ['Account holder', customerInfo.customerName] : null, ['Currency', currency], ['Amount', `${currency} ${parseFloat(amount || '0').toFixed(2)}`], ...chargeRows(quote, currency), ['Pay via', pm ? methodLabel(pm, balances, currency) : paymentMethod], paymentMethod === 'WALLET' ? null : ['Wallet', normalizePhone(paymentPhone)]].filter(Boolean).map((row: any) => <View key={row[0]} style={S.sumRow}><Text style={S.sumLbl}>{row[0]}</Text><Text style={S.sumVal}>{row[1]}</Text></View>)}
+            {[['Biller', biller?.name], [biller?.field || 'Account', accountRef], customerInfo?.customerName ? ['Account holder', customerInfo.customerName] : null, ['Currency', currency], ['Amount', formatAmount(payTotal, currency)], ['Pay via', pm ? methodLabel(pm) : paymentMethod], paymentMethod === 'WALLET' ? null : ['Wallet', normalizePhone(paymentPhone)]].filter(Boolean).map((row: any) => <View key={row[0]} style={S.sumRow}><Text style={S.sumLbl}>{row[0]}</Text><Text style={S.sumVal}>{row[1]}</Text></View>)}
           </View>
           <View style={S.modalBtns}>
             <TouchableOpacity style={S.btnOutline} onPress={() => setShowConfirm(false)}><Text style={S.btnOutlineTxt}>Cancel</Text></TouchableOpacity>
@@ -216,6 +227,8 @@ export default function BillsScreen() {
 }
 
 const S = themed(() => ({
+  billerHead: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, borderWidth: 1.5, backgroundColor: Colors.cardBg, marginBottom: 6 },
+  billerHeadName: { fontSize: 18, fontWeight: '800', fontFamily: 'Rubik_700Bold' },
   scroll: { flex: 1 }, body: { padding: 20 },
   err: { backgroundColor: Colors.errorBg, borderRadius: 12, padding: 12, marginBottom: 16 },
   errTxt: { color: Colors.red, fontSize: 14, fontFamily: 'Nunito_400Regular' },

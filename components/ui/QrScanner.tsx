@@ -4,13 +4,13 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, themed } from '../../constants/colors';
 
-/** The six-digit merchant code in a PayPort QR (PAYPORT-MERCHANT:123456, a link ending in the code, or the code alone). */
-export function codeFromQr(data: string): string | null {
-  const m = String(data || '').match(/([1-9]\d{5})(?!.*\d)/);
-  return m ? m[1] : null;
+/** A PayPort QR: PAYPORT-QR:<token> (current QRs), or an older QR / text holding the six-digit code. */
+export function isPayportQr(data: string): boolean {
+  const s = String(data || '').trim();
+  return /^PAYPORT-QR:[A-Z]{16}$/i.test(s) || /([1-9]\d{5})(?!.*\d)/.test(s);
 }
 
-export default function QrScanner({ visible, onCode, onClose }: { visible: boolean; onCode: (code: string) => void; onClose: () => void }) {
+export default function QrScanner({ visible, onCode, onClose, what = 'merchant' }: { visible: boolean; onCode: (payload: string) => void; onClose: () => void; what?: string }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [bad, setBad] = useState(false);
   const [done, setDone] = useState(false);
@@ -20,21 +20,20 @@ export default function QrScanner({ visible, onCode, onClose }: { visible: boole
         {!permission ? null : !permission.granted ? (
           <View style={S.centre}>
             <Ionicons name="camera-outline" size={48} color="#fff" />
-            <Text style={S.msg}>Allow the camera to scan the merchant's QR code.</Text>
+            <Text style={S.msg}>Allow the camera to scan the {what}'s QR code.</Text>
             <TouchableOpacity onPress={requestPermission} style={S.btn}><Text style={S.btnTxt}>Allow camera</Text></TouchableOpacity>
           </View>
         ) : (
           <CameraView style={{ flex: 1 }} facing="back" barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
             onBarcodeScanned={done ? undefined : ({ data }) => {
-              const code = codeFromQr(data);
-              if (!code) { setBad(true); return; }
+              if (!isPayportQr(data)) { setBad(true); return; }
               setDone(true);
-              onCode(code);
+              onCode(String(data).trim());
             }} />
         )}
         <View style={S.frameWrap} pointerEvents="none"><View style={S.frame} /></View>
         <View style={S.bottom}>
-          <Text style={S.msg}>{bad ? 'That is not a PayPort merchant QR code.' : 'Point the camera at the merchant QR code'}</Text>
+          <Text style={S.msg}>{bad ? 'That is not a PayPort QR code.' : `Point the camera at the ${what} QR code`}</Text>
           <TouchableOpacity onPress={onClose} style={[S.btn, { backgroundColor: 'rgba(255,255,255,0.15)' }]}><Text style={S.btnTxt}>Cancel</Text></TouchableOpacity>
         </View>
       </View>

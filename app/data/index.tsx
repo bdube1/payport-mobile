@@ -5,7 +5,7 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
 import { Colors, themed } from '../../constants/colors';
-import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../../lib/useCharges';
+import { useCharge, methodLabel } from '../../lib/useCharges';
 import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, BASE_URL, visibleMethods } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
@@ -21,7 +21,6 @@ export default function DataScreen() {
   const router = useRouter();
   const [network, setNetwork] = useState('');
   const [currency, setCurrency] = useState('');
-  const balances = useWalletBalances();
   const [currencies, setCurrencies] = useState<string[]>([]);
   const [bundles, setBundles] = useState<any[]>([]);
   const [filteredBundles, setFilteredBundles] = useState<any[]>([]);
@@ -184,7 +183,7 @@ export default function DataScreen() {
     if (normalizePhone(recipientPhone).length < 12) { setError('Enter the recipient number'); return; }
     if (!recipientValid) { setError(`Number is ${detectedNet?.networkName || 'unknown'} — must match ${network}`); return; }
     if (!paymentMethod) { setError('Select a payment method'); return; }
-    if (normalizePhone(paymentPhone).length < 12) { setError('Enter your wallet number'); return; }
+    if (paymentMethod === 'WALLET' ? walletPin.length < 4 : normalizePhone(paymentPhone).length < 12) { setError(paymentMethod === 'WALLET' ? 'Enter your PIN' : 'Enter your wallet number'); return; }
     setShowConfirm(true);
   };
 
@@ -194,7 +193,8 @@ export default function DataScreen() {
     }
     setLoading(true);
     const ref = generateReference('MOB');
-    const payPhone = normalizePhone(paymentPhone);
+    const me = useAuthStore.getState().user;
+    const payPhone = paymentMethod === 'WALLET' && me ? normalizePhone(me.phone) : normalizePhone(paymentPhone);
     try {
       await startPayment({ 
         reference: ref, 
@@ -387,7 +387,7 @@ export default function DataScreen() {
                     onPress={() => setPaymentMethod(m.code)} 
                     style={[S.chip, paymentMethod === m.code && S.chipActive]}
                   >
-                    <Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m, balances, currency)}</Text>
+                    <Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -398,7 +398,7 @@ export default function DataScreen() {
           {network && (
             <>
               {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={{ borderWidth: 1.5, borderColor: Colors.border, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 14, fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.cardBg, marginBottom: 4 }} /></>}
-            <Text style={S.lbl}>Payment Wallet Number</Text>
+              {paymentMethod !== 'WALLET' && <><Text style={S.lbl}>Payment Wallet Number</Text>
               <View style={S.phoneRow}>
                 <View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View>
                 <TextInput 
@@ -409,7 +409,7 @@ export default function DataScreen() {
                   keyboardType="phone-pad" 
                   style={S.phoneIn} 
                 />
-              </View>
+              </View></>}
               <TouchableOpacity style={S.btnPrimary} onPress={handleReview}>
                 <Text style={S.btnTxt}>Confirm and Pay</Text>
               </TouchableOpacity>
@@ -482,9 +482,8 @@ export default function DataScreen() {
                 ['Bundle', bundle?.name || ''], 
                 (bundle?.dataSize || bundle?.validity) ? ['Details', `${bundle?.dataSize || ''}${bundle?.dataSize && bundle?.validity ? ' · ' : ''}${bundle?.validity || ''}`] : null,
                 ['Recipient', normalizePhone(recipientPhone)], 
-                ['Amount', formatAmount(bundle?.amountCents || 0, currency)], 
-                ...chargeRows(quote, currency),
-                ['Pay via', pm ? methodLabel(pm, balances, currency) : paymentMethod], 
+                ['Amount', formatAmount(payTotal, currency)], 
+                ['Pay via', pm ? methodLabel(pm) : paymentMethod], 
                 paymentMethod === 'WALLET' ? null : ['Wallet', normalizePhone(paymentPhone)]
               ].filter((item): item is [string, string] => item !== null).map(([l, v]) => (
                 <View key={l} style={S.sumRow}>

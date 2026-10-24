@@ -221,7 +221,8 @@ export async function startPayment(
 /** The PayPort wallet is offered only to a signed-in customer. */
 export function visibleMethods<T extends { code: string }>(methods: T[], signedIn: boolean): T[] {
   if (!signedIn) return methods.filter(m => m.code !== 'WALLET');
-  return [...methods.filter(m => m.code === 'WALLET'), ...methods.filter(m => m.code !== 'WALLET')];
+  // A signed-in customer can always pay from the PayPort wallet, and it is the first option.
+  return [{ code: 'WALLET', name: 'PayPort Wallet', isActive: true, displayOrder: -1000 } as any as T, ...methods.filter(m => m.code !== 'WALLET')];
 }
 
 // Countries and currencies PayPort serves (public).
@@ -245,6 +246,7 @@ export const walletApi = {
   quote: (from: string, to: string, amountMinor: number) => api.post('/api/v1/wallet/fx/quotes', { from, to, amountMinor }),
   convert: (quoteRef: string, pin: string) => api.post('/api/v1/wallet/fx/conversions', { quoteRef, pin }),
   agent: (code: string) => api.get(`/api/v1/wallet/agents/${encodeURIComponent(code)}`),
+  scan: (payload: string) => api.get('/api/v1/codes/scan', { params: { payload } }),
   cashOut: (agentCode: string, currency: string, amountMinor: number, pin: string, clientRef: string) =>
     api.post('/api/v1/wallet/cash-out', { agentCode, currency, amountMinor, pin, clientRef }),
   merchant: (code: string) => api.get(`/api/v1/wallet/merchants/${encodeURIComponent(code)}`),

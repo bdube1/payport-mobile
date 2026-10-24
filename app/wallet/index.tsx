@@ -216,16 +216,7 @@ function useCharge(product: string, w: W, cents: number) {
 
 function ChargeLine({ charge, ccy }: { charge: any; ccy: string }) {
   if (!charge || !(charge.chargeMinor || charge.taxMinor)) return null;
-  return <Text style={[S.muted, { marginTop: 8 }]}>Charge {formatAmount(charge.chargeMinor, ccy)}{charge.taxMinor ? ` + tax ${formatAmount(charge.taxMinor, ccy)}` : ''} · Total {formatAmount(charge.totalMinor, ccy)}</Text>;
-}
-
-function CodeStep({ title, label, code, setCode, onNext }: any) {
-  return <>
-    <Text style={S.h}>{title}</Text>
-    <Text style={S.lbl}>{label}</Text>
-    <TextInput style={[S.input, S.code]} value={code} onChangeText={(t: string) => setCode(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor={Colors.textSecondary} />
-    <Btn title="Continue" color={Colors.primary} disabled={code.length !== 6} onPress={onNext} />
-  </>;
+  return <Text style={[S.muted, { marginTop: 8 }]}>Total {formatAmount(charge.totalMinor, ccy)}</Text>;
 }
 
 function Party({ kind, code, name, place, onChange }: { kind: string; code: string; name: string; place?: string; onChange: () => void }) {
@@ -242,16 +233,44 @@ function Party({ kind, code, name, place, onChange }: { kind: string; code: stri
 function CashOut({ w, busy, run, onError }: { w: W; busy: boolean; run: any; onError: (m: string) => void }) {
   const [code, setCode] = useState('');
   const [agent, setAgent] = useState<any>(null);
+  const [mode, setMode] = useState<'scan' | 'code'>('code');
   const [amount, setAmount] = useState('');
   const [pin, setPin] = useState('');
   const [clientRef, setClientRef] = useState(() => 'mob-co-' + Date.now().toString(36));
   const cents = toMinor(amount);
   const charge = useCharge('CASH_OUT', w, cents);
   const reset = () => { setCode(''); setAgent(null); setAmount(''); setPin(''); setClientRef('mob-co-' + Date.now().toString(36)); };
-  if (!agent) return <CodeStep title="Cash out at an agent" label="Agent code" code={code} setCode={setCode} onNext={async () => {
+  const findAgent = async (c: string) => {
     onError('');
-    try { const r = await walletApi.agent(code); setAgent(r.data?.data); } catch (e) { onError(errMsg(e, 'No agent with that code.')); }
-  }} />;
+    try { const r = await walletApi.agent(c); setAgent(r.data?.data); } catch (e) { onError(errMsg(e, 'No agent with that code.')); }
+  };
+  if (!agent) return <>
+    <Text style={S.h}>Cash out at an agent</Text>
+    <View style={[S.chipRow, { marginTop: 12 }]}>
+      <TouchableOpacity onPress={() => setMode('scan')} style={[S.modeBtn, mode === 'scan' && S.modeOn]}>
+        <Ionicons name="qr-code-outline" size={22} color={mode === 'scan' ? '#fff' : Colors.primary} />
+        <Text style={[S.modeTxt, mode === 'scan' && S.white]}>Scan QR</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setMode('code')} style={[S.modeBtn, mode === 'code' && S.modeOn]}>
+        <Ionicons name="keypad-outline" size={22} color={mode === 'code' ? '#fff' : Colors.primary} />
+        <Text style={[S.modeTxt, mode === 'code' && S.white]}>Enter code</Text>
+      </TouchableOpacity>
+    </View>
+    {mode === 'code' ? <>
+      <Text style={S.lbl}>Agent code</Text>
+      <TextInput style={[S.input, S.code]} value={code} onChangeText={(t: string) => setCode(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor={Colors.textSecondary} />
+      <Btn title="Continue" color={Colors.primary} disabled={code.length !== 6} onPress={() => findAgent(code)} />
+    </> : null}
+    <QrScanner what="agent" visible={mode === 'scan'} onClose={() => setMode('code')} onCode={async (payload) => {
+      setMode('code'); onError('');
+      try {
+        const r = await walletApi.scan(payload);
+        const d = r.data?.data || {};
+        if (d.type !== 'AGENT') { onError('That is not an agent QR code.'); return; }
+        setCode(d.code); setAgent(d);
+      } catch (e) { onError(errMsg(e, 'This QR code is not valid.')); }
+    }} />
+  </>;
   return <>
     <Text style={S.h}>Cash out at an agent</Text>
     <Party kind="Agent" code={agent.code} name={agent.name} place={agent.location} onChange={reset} />
@@ -296,7 +315,15 @@ function PayMerchant({ w, busy, run, onError }: { w: W; busy: boolean; run: any;
       <TextInput style={[S.input, S.code]} value={code} onChangeText={(t: string) => setCode(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor={Colors.textSecondary} />
       <Btn title="Continue" color={Colors.primary} disabled={code.length !== 6} onPress={() => find(code)} />
     </> : null}
-    <QrScanner visible={mode === 'scan'} onClose={() => setMode('code')} onCode={(c) => { setMode('code'); setCode(c); find(c); }} />
+    <QrScanner visible={mode === 'scan'} onClose={() => setMode('code')} onCode={async (payload) => {
+      setMode('code'); onError('');
+      try {
+        const r = await walletApi.scan(payload);
+        const d = r.data?.data || {};
+        if (d.type !== 'MERCHANT') { onError('That is not a merchant QR code.'); return; }
+        setCode(d.code); setM(d);
+      } catch (e) { onError(errMsg(e, 'This QR code is not valid.')); }
+    }} />
   </>;
   const takes = !m.currencies?.length || m.currencies.includes(w.currency);
   return <>
@@ -320,8 +347,8 @@ function WalletPick({ wallets, value, onChange }: { wallets: W[]; value: string;
     <View style={S.chipRow}>
       {wallets.map((x) => (
         <TouchableOpacity key={x.walletRef} onPress={() => onChange(x.walletRef)} style={[S.pick, value === x.walletRef && S.pickOn]}>
-          <Text style={[S.pickCcy, value === x.walletRef && S.white]}>{x.currency}</Text>
-          <Text style={[S.pickBal, value === x.walletRef && S.white]}>{formatAmount(x.balanceMinor, x.currency)}</Text>
+          <Text style={[S.pickBal, value === x.walletRef && S.white]}>{x.currency} wallet</Text>
+          <Text style={[S.pickCcy, value === x.walletRef && S.white]}>{x.walletRef}</Text>
         </TouchableOpacity>
       ))}
     </View>
