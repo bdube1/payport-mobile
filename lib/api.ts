@@ -55,6 +55,7 @@ api.interceptors.request.use(async (cfg) => {
     const token = await SecureStore.getItemAsync('pp_token');
     if (token) cfg.headers.Authorization = `Bearer ${token}`;
   } catch {}
+  cfg.headers['X-PayPort-Channel'] = 'MOB';
   const txToken = await transactionToken(referenceOf(cfg));
   if (txToken) cfg.headers['X-Transaction-Token'] = txToken;
   return cfg;
@@ -219,7 +220,8 @@ export async function startPayment(
 
 /** The PayPort wallet is offered only to a signed-in customer. */
 export function visibleMethods<T extends { code: string }>(methods: T[], signedIn: boolean): T[] {
-  return signedIn ? methods : methods.filter(m => m.code !== 'WALLET');
+  if (!signedIn) return methods.filter(m => m.code !== 'WALLET');
+  return [...methods.filter(m => m.code === 'WALLET'), ...methods.filter(m => m.code !== 'WALLET')];
 }
 
 // Countries and currencies PayPort serves (public).
@@ -242,8 +244,17 @@ export const walletApi = {
   pay: (reference: string, pin: string) => api.post('/api/v1/wallet/pay', { reference, pin }),
   quote: (from: string, to: string, amountMinor: number) => api.post('/api/v1/wallet/fx/quotes', { from, to, amountMinor }),
   convert: (quoteRef: string, pin: string) => api.post('/api/v1/wallet/fx/conversions', { quoteRef, pin }),
-  cashOutCode: (currency: string, amountMinor: number, pin: string) => api.post('/api/v1/wallet/cash-out-codes', { currency, amountMinor, pin }),
-  cashOutCodes: () => api.get('/api/v1/wallet/cash-out-codes'),
+  agent: (code: string) => api.get(`/api/v1/wallet/agents/${encodeURIComponent(code)}`),
+  cashOut: (agentCode: string, currency: string, amountMinor: number, pin: string, clientRef: string) =>
+    api.post('/api/v1/wallet/cash-out', { agentCode, currency, amountMinor, pin, clientRef }),
+  merchant: (code: string) => api.get(`/api/v1/wallet/merchants/${encodeURIComponent(code)}`),
+  payMerchant: (merchantCode: string, currency: string, amountMinor: number, pin: string, description?: string | null) =>
+    api.post('/api/v1/wallet/pay-merchant', { merchantCode, currency, amountMinor, pin, description }),
+  charges: (product: string, currency: string, amountMinor: number) => api.get('/api/v1/wallet/charges', { params: { product, currency, amountMinor } }),
+  cards: () => api.get('/api/v1/wallet/cards'),
+  requestCard: (body: Record<string, any>) => api.post('/api/v1/wallet/cards', body),
+  cardAction: (ref: string, action: string, pin: string) => api.post(`/api/v1/wallet/cards/${encodeURIComponent(ref)}/action`, { action, pin }),
+  refreshCard: (ref: string) => api.post(`/api/v1/wallet/cards/${encodeURIComponent(ref)}/refresh`),
 };
 
 // ── Bills ─────────────────────────────────────────────────────────────────

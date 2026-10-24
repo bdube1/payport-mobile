@@ -67,6 +67,7 @@ export default function RootLayout() {
         <Stack.Screen name="airtime/index" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="data/index" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="bills/index" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="wallet/index" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="processing/[ref]" options={{ headerShown: false, presentation: 'card', gestureEnabled: false }} />
         <Stack.Screen name="status/[ref]" options={{ headerShown: false, presentation: 'card' }} />
       </Stack>
