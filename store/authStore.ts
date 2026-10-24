@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { authApi, normalizePhone } from '../lib/api';
-import { saveSession, clearSession, getUser, getToken, getDeviceId, PPUser } from '../lib/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveSession, clearSession, getUser, getToken, getDeviceId, setBiometricEnabled, PPUser } from '../lib/auth';
+
+const INSTALL_KEY = 'pp_installed';
 import { registerForPush, unregisterPush } from '../lib/push';
 
 interface AuthState {
@@ -22,6 +25,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   hydrated: false,
 
   hydrate: async () => {
+    // A new install always starts as a guest: the keychain can keep an old session after the app is removed,
+    // but app storage does not, so a missing install marker means a fresh install.
+    try {
+      if (!(await AsyncStorage.getItem(INSTALL_KEY))) {
+        await clearSession().catch(() => {});
+        await setBiometricEnabled(false).catch(() => {});
+        await AsyncStorage.setItem(INSTALL_KEY, String(Date.now()));
+        set({ user: null, token: null, hydrated: true });
+        return;
+      }
+    } catch { /* storage unavailable: keep the saved session */ }
     const [user, token] = await Promise.all([getUser(), getToken()]);
     set({ user, token, hydrated: true });
     // Tokens can rotate; registering again is a no-op when nothing changed.

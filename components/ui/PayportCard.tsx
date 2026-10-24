@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { themed } from '../../constants/colors';
 
 export type CardData = {
-  cardRef: string; walletRef: string; currency: string; scheme: string; form: string; status: string;
+  cardRef: string; walletRef: string; currency: string; currencies?: string[]; scheme: string; form: string; status: string;
   maskedPan?: string | null; last4?: string | null; expiry?: string | null; nickname?: string | null; nameOnCard?: string | null; note?: string | null;
 };
 
