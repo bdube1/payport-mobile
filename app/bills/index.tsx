@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
+import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../../lib/useCharges';
 import { startPayment, paymentError, billersApi, productsApi, normalizePhone, formatAmount, generateReference, visibleMethods } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { fetchActiveBillers, getFallbackIcon, Biller } from '../../lib/billers';
@@ -75,6 +76,9 @@ export default function BillsScreen() {
 
   const pm = paymentMethods.find((m: any) => m.code === paymentMethod);
   const amtCents = amount ? Math.round(parseFloat(amount) * 100) : 0;
+  const quote = useCharge(biller?.productCode, currency, amtCents);
+  const balances = useWalletBalances();
+  const payTotal = quote ? quote.totalCents : amtCents;
 
   const handleReview = () => {
     setError('');
@@ -179,7 +183,7 @@ export default function BillsScreen() {
             {paymentMethods.length > 0 && <>
               <Text style={S.lbl}>Payment Method</Text>
               <View style={S.chipRow}>
-                {paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{m.name}</Text></TouchableOpacity>)}
+                {paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m, balances, currency)}</Text></TouchableOpacity>)}
               </View>
             </>}
 
@@ -197,12 +201,12 @@ export default function BillsScreen() {
         <View style={S.overlay}><View style={S.sheet}><View style={S.sheetHandle} />
           <Text style={S.sheetTitle}>Confirm Payment</Text>
           <View style={S.summaryBox}>
-            {[['Biller', biller?.name], [biller?.field || 'Account', accountRef], customerInfo?.customerName ? ['Account holder', customerInfo.customerName] : null, ['Currency', currency], ['Amount', `${currency} ${parseFloat(amount || '0').toFixed(2)}`], ['Pay via', pm?.name || paymentMethod], ['Wallet', normalizePhone(paymentPhone)]].filter(Boolean).map((row: any) => <View key={row[0]} style={S.sumRow}><Text style={S.sumLbl}>{row[0]}</Text><Text style={S.sumVal}>{row[1]}</Text></View>)}
+            {[['Biller', biller?.name], [biller?.field || 'Account', accountRef], customerInfo?.customerName ? ['Account holder', customerInfo.customerName] : null, ['Currency', currency], ['Amount', `${currency} ${parseFloat(amount || '0').toFixed(2)}`], ...chargeRows(quote, currency), ['Pay via', pm ? methodLabel(pm, balances, currency) : paymentMethod], paymentMethod === 'WALLET' ? null : ['Wallet', normalizePhone(paymentPhone)]].filter(Boolean).map((row: any) => <View key={row[0]} style={S.sumRow}><Text style={S.sumLbl}>{row[0]}</Text><Text style={S.sumVal}>{row[1]}</Text></View>)}
           </View>
           <View style={S.modalBtns}>
             <TouchableOpacity style={S.btnOutline} onPress={() => setShowConfirm(false)}><Text style={S.btnOutlineTxt}>Cancel</Text></TouchableOpacity>
             <TouchableOpacity style={[S.btnGreen, loading && { opacity: 0.6 }]} onPress={handlePay} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.btnTxt}>Pay {currency} {parseFloat(amount || '0').toFixed(2)}</Text>}
+              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.btnTxt}>Pay {formatAmount(payTotal, currency)}</Text>}
             </TouchableOpacity>
           </View>
         </View></View>
@@ -211,7 +215,7 @@ export default function BillsScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   scroll: { flex: 1 }, body: { padding: 20 },
   err: { backgroundColor: Colors.errorBg, borderRadius: 12, padding: 12, marginBottom: 16 },
   errTxt: { color: Colors.red, fontSize: 14, fontFamily: 'Nunito_400Regular' },
@@ -258,4 +262,4 @@ const S = StyleSheet.create({
   totalLbl: { fontSize: 16, fontWeight: 'bold', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   totalVal: { fontSize: 20, fontWeight: 'bold', color: Colors.primary, fontFamily: 'Rubik_700Bold' },
   modalBtns: { flexDirection: 'row', gap: 12 },
-});
+}));

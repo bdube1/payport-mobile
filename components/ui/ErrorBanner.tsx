@@ -1,3 +1,4 @@
+import { themed } from '../../constants/colors';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,7 @@ export default function ErrorBanner({ message }: ErrorBannerProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -36,4 +37,4 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     lineHeight: 20,
   },
-});
+}));

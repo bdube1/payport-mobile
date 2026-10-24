@@ -4,7 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientScreen from '../../components/ui/GradientScreen';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { walletApi, formatAmount } from '../../lib/api';
 
@@ -26,11 +26,12 @@ const WALLET_SERVICES = [
     { icon: 'phone-portrait-outline' as const,  title: 'Airtime',      route: '/airtime' },
     { icon: 'wifi-outline' as const,            title: 'Data',         route: '/data' },
     { icon: 'receipt-outline' as const,         title: 'Bills',        route: '/bills' },
-    { icon: 'card-outline' as const,            title: 'Cards',        route: '/wallet?a=cards' },
+    { icon: 'card-outline' as const,            title: 'Cards',        route: '/cards' },
 ];
 
 type W = { walletRef: string; currency: string; balanceMinor: number; status: string };
 const ORDER: Record<string, number> = { USD: 0, ZWG: 1 };
+const amountOnly = (minor: number) => (Number(minor || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** Home for a registered customer: wallets and every service in one place. */
 function RegisteredHome() {
@@ -38,7 +39,6 @@ function RegisteredHome() {
     const user = useAuthStore((s) => s.user)!;
     const [wallets, setWallets] = useState<W[] | null>(null);
     const [enabled, setEnabled] = useState(false);
-    const [hide, setHide] = useState(false);
     const load = useCallback(() => walletApi.list()
         .then((r) => { const d = r.data?.data || {}; setEnabled(!!d.enabled); setWallets([...(d.wallets || [])].sort((a: W, b: W) => (ORDER[a.currency] ?? 9) - (ORDER[b.currency] ?? 9))); })
         .catch(() => setWallets([])), []);
@@ -48,37 +48,36 @@ function RegisteredHome() {
         <GradientScreen>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}
                 refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}>
-                <LinearGradient colors={[Colors.primary, Colors.primaryDark, Colors.accent]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.dashHeader}>
-                    <View style={styles.dashTop}>
-                        <View style={styles.logoPill}><Image source={require('../../assets/logo-lockup.png')} style={styles.dashLogo} resizeMode="contain" /></View>
-                        <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.dashAvatar}>
-                            <Text style={styles.avatarText}>{user.fullName[0].toUpperCase()}</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14 }}>
-                        <View>
-                            <Text style={styles.dashHello}>Welcome back</Text>
-                            <Text style={styles.dashName}>{user.fullName.split(' ')[0]}</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => setHide((h) => !h)} style={styles.eye}>
-                            <Ionicons name={hide ? 'eye-off-outline' : 'eye-outline'} size={18} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
+                <View style={styles.topBar}>
+                    <Image source={require('../../assets/logo-lockup.png')} style={styles.topLogo} resizeMode="contain" />
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.topAvatar}>
+                        <Text style={styles.topAvatarTxt}>{user.fullName.trim()[0]?.toUpperCase() || 'P'}</Text>
+                    </TouchableOpacity>
+                </View>
+                <LinearGradient colors={['#0E86C2', '#0B5C8F', '#0A3560']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balanceCard}>
+                    <Text style={styles.dashHello}>Welcome back</Text>
+                    <Text style={styles.dashName}>{user.fullName.trim().split(/\s+/)[0]}</Text>
                     <View style={styles.wrow}>
-                        {wallets === null ? <View style={styles.wcard}><Text style={styles.wlabel}>Loading…</Text></View> : null}
+                        {wallets === null ? <View style={styles.wcard}><Text style={styles.wref}>Loading…</Text></View> : null}
                         {(wallets || []).map((w) => (
                             <TouchableOpacity key={w.walletRef} style={styles.wcard} activeOpacity={0.85} onPress={() => router.push(`/history?tab=wallet` as any)}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                    <Text style={styles.wlabel}>{w.currency} Wallet</Text>
-                                    {w.status !== 'ACTIVE' ? <Text style={styles.wlabel}>{w.status}</Text> : null}
+                                <View style={styles.wtop}>
+                                    <View style={styles.wicon}><Ionicons name="wallet-outline" size={22} color="#0E86C2" /></View>
+                                    <View style={{ flex: 1, minWidth: 0 }}>
+                                        <Text style={styles.wlabel} numberOfLines={1} adjustsFontSizeToFit>{w.currency} Wallet</Text>
+                                        <Text style={styles.wref} numberOfLines={1} adjustsFontSizeToFit>{w.walletRef}</Text>
+                                    </View>
                                 </View>
-                                <Text style={styles.wbal} numberOfLines={1} adjustsFontSizeToFit>{hide ? '••••••' : formatAmount(w.balanceMinor, w.currency)}</Text>
-                                <Text style={styles.wref}>{w.walletRef}</Text>
+                                <Text style={styles.wbal} numberOfLines={1} adjustsFontSizeToFit>{amountOnly(w.balanceMinor)}</Text>
+                                <Text style={styles.wccy}>{w.currency}</Text>
                             </TouchableOpacity>
                         ))}
                         {wallets && wallets.length === 0 ? (
                             <TouchableOpacity style={styles.wcard} onPress={() => enabled && router.push('/wallet?a=topup' as any)}>
-                                <Text style={styles.wlabel}>PayPort Wallet</Text>
+                                <View style={styles.wtop}>
+                                    <View style={styles.wicon}><Ionicons name="wallet-outline" size={22} color="#0E86C2" /></View>
+                                    <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.wlabel}>PayPort Wallet</Text></View>
+                                </View>
                                 <Text style={[styles.wbal, { fontSize: 18 }]}>{enabled ? 'Open your wallet' : 'Coming soon'}</Text>
                             </TouchableOpacity>
                         ) : null}
@@ -94,13 +93,15 @@ function RegisteredHome() {
                     ))}
                 </View>
 
-                <TouchableOpacity style={styles.helpCard} onPress={() => router.push('/help')} activeOpacity={0.85}>
-                    <View style={styles.helpIcon}><Ionicons name="help-circle-outline" size={24} color="#fff" /></View>
+                <TouchableOpacity style={styles.supportRow} onPress={() => router.push('/help')} activeOpacity={0.85}>
+                    <View style={styles.supportIconBadge}>
+                        <Ionicons name="help-circle-outline" size={20} color={Colors.primary} />
+                    </View>
                     <View style={{ flex: 1 }}>
                         <Text style={styles.supportTitle}>Need help?</Text>
-                        <Text style={styles.supportSub}>Chat with us or track an order</Text>
+                        <Text style={styles.supportSub}>Support, FAQs & policies</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+                    <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
                 </TouchableOpacity>
             </ScrollView>
         </GradientScreen>
@@ -191,20 +192,22 @@ function GuestHome() {
     );
 }
 
-const styles = StyleSheet.create({
-    dashHeader: { paddingTop: 52, paddingBottom: 22, paddingHorizontal: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
-    dashTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    logoPill: { backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 8, paddingVertical: 2 },
-    dashLogo: { height: 36, width: 62 },
-    dashAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.22)', alignItems: 'center', justifyContent: 'center' },
-    dashHello: { fontSize: 14, color: 'rgba(255,255,255,0.85)', fontFamily: 'Nunito_400Regular' },
-    dashName: { fontSize: 26, fontWeight: '800', color: '#fff', fontFamily: 'Rubik_800ExtraBold' },
-    eye: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-    wrow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 16, marginHorizontal: -4 },
-    wcard: { flexGrow: 1, flexBasis: '45%', margin: 4, borderRadius: 18, padding: 16, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
-    wlabel: { fontSize: 13, color: 'rgba(255,255,255,0.92)', fontWeight: '700', fontFamily: 'Rubik_700Bold' },
-    wbal: { fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: 'Rubik_800ExtraBold', marginVertical: 8 },
-    wref: { fontSize: 12, color: 'rgba(255,255,255,0.8)', letterSpacing: 1 },
+const styles = themed(() => ({
+    topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14 },
+    topLogo: { height: 72, width: 200, marginLeft: -26, marginVertical: -8 },
+    topAvatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: '#0B6E99', alignItems: 'center', justifyContent: 'center' },
+    topAvatarTxt: { fontSize: 24, fontWeight: '800', color: '#fff', fontFamily: 'Rubik_700Bold' },
+    balanceCard: { marginHorizontal: 16, borderRadius: 26, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 18 },
+    dashHello: { fontSize: 17, color: 'rgba(255,255,255,0.88)', fontFamily: 'Nunito_500Medium' },
+    dashName: { fontSize: 30, fontWeight: '800', color: '#fff', fontFamily: 'Rubik_800ExtraBold', marginTop: 2 },
+    wrow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 16, marginHorizontal: -5 },
+    wcard: { flexGrow: 1, flexBasis: '44%', margin: 5, borderRadius: 20, padding: 12, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)' },
+    wtop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    wicon: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+    wlabel: { fontSize: 14, color: '#fff', fontWeight: '800', fontFamily: 'Rubik_700Bold' },
+    wref: { fontSize: 11, color: 'rgba(255,255,255,0.88)', marginTop: 2, fontFamily: 'Nunito_500Medium' },
+    wbal: { fontSize: 30, fontWeight: '800', color: '#fff', fontFamily: 'Rubik_800ExtraBold', marginTop: 16 },
+    wccy: { fontSize: 15, color: 'rgba(255,255,255,0.9)', marginTop: 2, fontFamily: 'Nunito_500Medium' },
     grid3: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14, marginTop: 20 },
     tile: {
         width: '30.6%', marginHorizontal: '1.35%', marginBottom: 12, backgroundColor: Colors.cardBg, borderRadius: 18, paddingVertical: 16, alignItems: 'center',
@@ -212,8 +215,6 @@ const styles = StyleSheet.create({
     },
     tileIcon: { width: 50, height: 50, borderRadius: 15, backgroundColor: 'rgba(6,163,218,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
     tileTxt: { fontSize: 12.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
-    helpCard: { flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 20, marginTop: 8, padding: 16, borderRadius: 18, backgroundColor: Colors.lightCyan },
-    helpIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: Colors.green, alignItems: 'center', justifyContent: 'center' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: 20, paddingVertical: 14,
@@ -263,4 +264,4 @@ const styles = StyleSheet.create({
     },
     supportTitle: { fontSize: 14.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
     supportSub: { fontSize: 12, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', marginTop: 1 },
-});
+}));

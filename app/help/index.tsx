@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 const ITEMS = [
   { icon: 'information-circle-outline' as const, label: 'About Us',                       route: '/help/about'    },
@@ -35,7 +35,7 @@ export default function HelpHubScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   body: { padding: 20, paddingTop: 24 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 },
   card: {
@@ -45,4 +45,4 @@ const S = StyleSheet.create({
   },
   iconBadge: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(6,163,218,0.1)', alignItems: 'center', justifyContent: 'center' },
   cardLabel: { fontSize: 13.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', textAlign: 'center' },
-});
+}));

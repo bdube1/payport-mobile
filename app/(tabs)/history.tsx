@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 import { transactionsApi, walletApi, formatAmount } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 
@@ -111,6 +111,7 @@ export default function HistoryScreen() {
                 </View>
                 {open === item.reference ? (
                   <Details items={[['Reference', item.reference], ['What', item.productName], ['To', item.recipientIdentifier], ['Amount', formatAmount(item.amountCents, item.currency)],
+                    ...(item.chargeCents || item.taxCents ? [['Charge', formatAmount((item.chargeCents || 0) + (item.taxCents || 0), item.currency)], ['Total paid', formatAmount(item.totalCents, item.currency)]] as [string, any][] : []),
                     ['Paid with', METHOD[item.paymentMethodCode] || item.paymentMethodCode], ['Status', item.status.replace(/_/g, ' ')], ['Date', full(item.createdAt || item.initiatedAt)],
                     ['Token', item.voucherToken || item.token]]}>
                     <TouchableOpacity onPress={() => router.push(`/status/${item.reference}`)}><Text style={S.link}>Track this order ›</Text></TouchableOpacity>
@@ -182,7 +183,7 @@ function WalletHistory() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   tabs: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 12 },
   tab: { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.cardBg },
   tabOn: { backgroundColor: Colors.primary, borderColor: Colors.primary },
@@ -204,4 +205,4 @@ const S = StyleSheet.create({
   txAmount: { fontSize: 15, fontWeight: '700', fontFamily: 'Rubik_700Bold' },
   txDate: { flex: 1, fontSize: 12, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular' },
   txStatus: { fontSize: 12, fontWeight: '700', fontFamily: 'Rubik_700Bold' },
-});
+}));

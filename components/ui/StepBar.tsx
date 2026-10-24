@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 interface StepBarProps {
   step: number;
@@ -47,7 +47,7 @@ export default function StepBar({ step, labels }: StepBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -117,4 +117,4 @@ const styles = StyleSheet.create({
   },
   labelActive: { color: Colors.primary },
   labelDone:   { color: Colors.green },
-});
+}));

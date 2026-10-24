@@ -4,13 +4,14 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
+import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../../lib/useCharges';
 import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, visibleMethods } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
 import { isBiometricEnabled } from '../../lib/auth';
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   scroll: { flex: 1 }, body: { padding: 20 },
   err: { backgroundColor: Colors.errorBg, borderRadius: 12, padding: 12, marginBottom: 16 },
   errTxt: { color: Colors.red, fontSize: 14, fontFamily: 'Nunito_400Regular' },
@@ -45,7 +46,7 @@ const S = StyleSheet.create({
   totalLbl: { fontSize: 16, fontWeight: 'bold', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   totalVal: { fontSize: 20, fontWeight: 'bold', color: Colors.primary, fontFamily: 'Rubik_700Bold' },
   modalBtns: { flexDirection: 'row', gap: 12 },
-});
+}));
 
 export default function AirtimeScreen() {
   const router = useRouter();
@@ -93,6 +94,9 @@ export default function AirtimeScreen() {
   const networkDetected = !!network && !networkLoading;
   const pm = paymentMethods.find((m: any) => m.code === paymentMethod);
   const amtCents = customAmt ? Math.round(parseFloat(customAmt) * 100) : 0;
+  const quote = useCharge(network?.networkCode ? `AIRTIME_${network.networkCode}` : null, currency, amtCents);
+  const balances = useWalletBalances();
+  const payTotal = quote ? quote.totalCents : amtCents;
 
   const handleReview = () => {
     setError('');
@@ -144,7 +148,7 @@ export default function AirtimeScreen() {
             {currencies.length > 0 && <><Text style={S.lbl}>Currency</Text><View style={S.chipRow}>{currencies.map(c => <TouchableOpacity key={c} onPress={() => setCurrency(c)} style={[S.chip, currency === c && S.chipActive]}><Text style={[S.chipTxt, currency === c && S.chipActiveTxt]}>{c}</Text></TouchableOpacity>)}</View></>}
             <Text style={S.lbl}>Amount{currency ? ` (${currency})` : ''}</Text>
             <TextInput value={customAmt} onChangeText={setCustomAmt} placeholder="e.g. 5.00" placeholderTextColor={Colors.textSecondary} keyboardType="decimal-pad" style={S.input} />
-            {paymentMethods.length > 0 && <><Text style={S.lbl}>Payment Method</Text><View style={S.chipRow}>{paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{m.name}</Text></TouchableOpacity>)}</View></>}
+            {paymentMethods.length > 0 && <><Text style={S.lbl}>Payment Method</Text><View style={S.chipRow}>{paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m, balances, currency)}</Text></TouchableOpacity>)}</View></>}
             {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={S.input} /></>}
             <Text style={S.lbl}>Payment Wallet Number</Text>
             <View style={S.phoneRow}><View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View><TextInput value={paymentPhone} onChangeText={setPaymentPhone} placeholder="Wallet for USSD prompt" placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} /></View>
@@ -157,12 +161,12 @@ export default function AirtimeScreen() {
         <View style={S.overlay}><View style={S.sheet}><View style={S.sheetHandle} />
           <Text style={S.sheetTitle}>Confirm payment</Text>
           <View style={S.summaryBox}>
-            {[['Service', `${network?.networkName || ''} Airtime`], ['Recipient', normalizePhone(recipientPhone)], ['Amount', formatAmount(amtCents, currency)], ['Pay via', pm?.name || paymentMethod], ['Wallet', normalizePhone(paymentPhone)]].map(([l, v]) => <View key={l} style={S.sumRow}><Text style={S.sumLbl}>{l}</Text><Text style={S.sumVal}>{v}</Text></View>)}
+            {[['Service', `${network?.networkName || ''} Airtime`], ['Recipient', normalizePhone(recipientPhone)], ['Amount', formatAmount(amtCents, currency)], ...chargeRows(quote, currency), ['Pay via', pm ? methodLabel(pm, balances, currency) : paymentMethod], ...(paymentMethod === 'WALLET' ? [] : [['Wallet', normalizePhone(paymentPhone)]])].map(([l, v]) => <View key={l} style={S.sumRow}><Text style={S.sumLbl}>{l}</Text><Text style={S.sumVal}>{v}</Text></View>)}
           </View>
           <View style={S.modalBtns}>
             <TouchableOpacity style={S.btnOutline} onPress={() => setShowConfirm(false)}><Text style={S.btnOutlineTxt}>Cancel</Text></TouchableOpacity>
             <TouchableOpacity style={[S.btnGreen, loading && { opacity: 0.6 }]} onPress={handlePay} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.btnTxt}>Pay {formatAmount(amtCents, currency)}</Text>}
+              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.btnTxt}>Pay {formatAmount(payTotal, currency)}</Text>}
             </TouchableOpacity>
           </View>
         </View></View>

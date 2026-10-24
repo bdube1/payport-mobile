@@ -1418,6 +1418,11 @@
   },
   {
    "method": "GET",
+   "path": "/api/v1/charges/quote",
+   "access": null
+  },
+  {
+   "method": "GET",
    "path": "/api/v1/checkout/{id}",
    "access": null
   },
@@ -1974,6 +1979,11 @@
   {
    "method": "POST",
    "path": "/api/v1/wallet/cards/{ref}/refresh",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/wallet/cards/{ref}/reveal",
    "access": null
   },
   {

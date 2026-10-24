@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
@@ -19,12 +19,23 @@ import {
 } from '@expo-google-fonts/nunito';
 import { useAuthStore } from '../store/authStore';
 import { listenForNotificationTaps } from '../lib/push';
-import { Colors, isDark } from '../constants/colors';
+import { Colors, isDark, onThemeChange, themeVersion } from '../constants/colors';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const hydrate = useAuthStore((s) => s.hydrate);
+  const router = useRouter();
+  // A theme switch redraws every screen with the new palette; the session is kept and Profile is shown again.
+  const [theme, setTheme] = useState(themeVersion());
+  const switched = useRef(false);
+  useEffect(() => onThemeChange((v) => { switched.current = true; setTheme(v); }), []);
+  useEffect(() => {
+    if (!switched.current) return;
+    switched.current = false;
+    const t = setTimeout(() => router.replace('/(tabs)/profile'), 0);
+    return () => clearTimeout(t);
+  }, [theme]);
 
   const [rubikLoaded] = useRubikFonts({
     Rubik_500Medium,
@@ -59,7 +70,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
+    <GestureHandlerRootView key={`theme-${theme}`} style={{ flex: 1, backgroundColor: Colors.background }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -68,6 +79,8 @@ export default function RootLayout() {
         <Stack.Screen name="data/index" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="bills/index" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="wallet/index" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="cards/index" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="cards/[ref]" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="processing/[ref]" options={{ headerShown: false, presentation: 'card', gestureEnabled: false }} />
         <Stack.Screen name="status/[ref]" options={{ headerShown: false, presentation: 'card' }} />
       </Stack>

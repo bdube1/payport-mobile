@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 const FAQS = [
   { q: 'How long does airtime delivery take?',        a: 'Most top-ups are delivered within 30 seconds.' },
@@ -28,9 +28,9 @@ export default function FaqsScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   body: { padding: 20, paddingTop: 24, gap: 10 },
   card: { backgroundColor: Colors.cardBg, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.borderLight },
   q: { fontSize: 14.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', marginBottom: 6 },
   a: { fontSize: 13.5, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', lineHeight: 20 },
-});
+}));

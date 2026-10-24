@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 type Props = {
   children: React.ReactNode;
@@ -24,7 +24,7 @@ export default function GradientScreen({ children, edges = ['top'] }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   root: { flex: 1 },
   safe: { flex: 1 },
-});
+}));

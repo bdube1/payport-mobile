@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'r
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 const CONTACTS = [
   { icon: 'logo-whatsapp' as const, label: 'WhatsApp Live Chat', value: '+263 719 183 557',        onPress: () => Linking.openURL('https://wa.me/263719183557'), color: '#25D366' },
@@ -37,7 +37,7 @@ export default function ContactScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   body: { padding: 20, paddingTop: 24, gap: 16 },
   card: {
     backgroundColor: Colors.cardBg, borderRadius: 16, padding: 22, alignItems: 'center', gap: 14,
@@ -53,4 +53,4 @@ const S = StyleSheet.create({
   },
   addressTitle: { fontSize: 13.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', marginBottom: 2 },
   addressLine: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', lineHeight: 19 },
-});
+}));

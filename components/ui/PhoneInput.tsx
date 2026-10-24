@@ -2,7 +2,7 @@ import React from 'react';
 import {
   View, TextInput, Text, StyleSheet, TextStyle, ViewStyle,
 } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 interface PhoneInputProps {
   label?: string;
@@ -51,7 +51,7 @@ export default function PhoneInput({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   wrapper: { marginBottom: 16 },
   label: {
     fontSize: 11,
@@ -100,4 +100,4 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontFamily: 'Nunito_400Regular',
   },
-});
+}));

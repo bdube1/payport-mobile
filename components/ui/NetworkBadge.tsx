@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 interface NetworkBadgeProps {
   networkName: string;
@@ -18,7 +18,7 @@ export default function NetworkBadge({ networkName, valid = true }: NetworkBadge
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -54,4 +54,4 @@ const styles = StyleSheet.create({
   textInvalid: {
     color: Colors.red,
   },
-});
+}));

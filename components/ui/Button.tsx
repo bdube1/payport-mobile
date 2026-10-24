@@ -3,7 +3,7 @@ import {
   TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle, TextStyle,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 type Variant = 'primary' | 'green' | 'outline' | 'ghost' | 'danger';
 
@@ -77,7 +77,7 @@ export default function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   base: {
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -92,4 +92,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Rubik_700Bold',
   },
-});
+}));

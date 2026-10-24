@@ -4,9 +4,8 @@
 // the user's choice (Profile > Appearance), else the phone's setting.
 // Changing it restarts the app's JavaScript so every screen picks it up.
 // ============================================================
-import { Appearance, DevSettings } from 'react-native';
+import { Appearance, StyleSheet } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import * as Updates from 'expo-updates';
 
 export type ThemeMode = 'light' | 'dark';
 export const THEME_KEY = 'pp_theme';
@@ -20,8 +19,8 @@ function savedMode(): ThemeMode | null {
     }
 }
 
-export const themeMode: ThemeMode = savedMode() ?? (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light');
-export const isDark = themeMode === 'dark';
+export let themeMode: ThemeMode = savedMode() ?? (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light');
+export let isDark = themeMode === 'dark';
 
 const brand = {
     primary:       '#06A3DA',
@@ -93,14 +92,46 @@ const dark: typeof light = {
     card:   '#101A2E',
 };
 
-export const Colors = isDark ? dark : light;
+/** The live palette: switching theme updates it in place, so the app redraws without restarting or signing out. */
+export const Colors: typeof light = { ...(isDark ? dark : light) };
 
-/** Saves the choice and restarts the JavaScript so every screen is drawn with the new palette. */
+let version = 0;
+const listeners = new Set<(v: number) => void>();
+
+/** Current theme version (changes on every switch). */
+export const themeVersion = () => version;
+
+export function onThemeChange(fn: (v: number) => void) {
+    listeners.add(fn);
+    return () => { listeners.delete(fn); };
+}
+
+/** Saves the choice and switches the palette at once; the session and the screen stay as they are. */
 export async function setThemeMode(mode: ThemeMode) {
     try { await SecureStore.setItemAsync(THEME_KEY, mode); } catch { /* not saved */ }
-    try {
-        await Updates.reloadAsync();
-        return;
-    } catch { /* development build */ }
-    try { DevSettings.reload(); } catch { /* restart manually */ }
+    if (mode === themeMode) return;
+    themeMode = mode;
+    isDark = mode === 'dark';
+    Object.assign(Colors, isDark ? dark : light);
+    version += 1;
+    listeners.forEach((fn) => fn(version));
+}
+
+/**
+ * A style sheet that follows the theme: the styles are built from the current palette and rebuilt after a switch.
+ * Use like StyleSheet.create: const S = themed(() => ({ card: { backgroundColor: Colors.cardBg } }));
+ */
+export function themed<T extends StyleSheet.NamedStyles<T> | StyleSheet.NamedStyles<any>>(build: () => T & StyleSheet.NamedStyles<any>): T {
+    let built: T | null = null;
+    let at = -1;
+    const current = () => {
+        if (!built || at !== version) { built = StyleSheet.create(build()) as T; at = version; }
+        return built;
+    };
+    return new Proxy({} as T, {
+        get: (_t, key) => (current() as any)[key],
+        has: (_t, key) => key in current(),
+        ownKeys: () => Reflect.ownKeys(current()),
+        getOwnPropertyDescriptor: (_t, key) => ({ enumerable: true, configurable: true, value: (current() as any)[key] }),
+    });
 }

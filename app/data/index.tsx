@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
+import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../../lib/useCharges';
 import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, BASE_URL, visibleMethods } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { authenticateWithBiometric, isBiometricAvailable } from '../../lib/biometric';
@@ -20,6 +21,7 @@ export default function DataScreen() {
   const router = useRouter();
   const [network, setNetwork] = useState('');
   const [currency, setCurrency] = useState('');
+  const balances = useWalletBalances();
   const [currencies, setCurrencies] = useState<string[]>([]);
   const [bundles, setBundles] = useState<any[]>([]);
   const [filteredBundles, setFilteredBundles] = useState<any[]>([]);
@@ -228,6 +230,9 @@ export default function DataScreen() {
     }
   };
 
+  const quote = useCharge(network ? `DATA_${network}` : null, currency, bundle?.amountCents || 0);
+  const payTotal = quote ? quote.totalCents : (bundle?.amountCents || 0);
+
   return (
     <GradientScreen>
       <AppBar title="Data Bundles" showBack />
@@ -382,7 +387,7 @@ export default function DataScreen() {
                     onPress={() => setPaymentMethod(m.code)} 
                     style={[S.chip, paymentMethod === m.code && S.chipActive]}
                   >
-                    <Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{m.name}</Text>
+                    <Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m, balances, currency)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -478,9 +483,10 @@ export default function DataScreen() {
                 (bundle?.dataSize || bundle?.validity) ? ['Details', `${bundle?.dataSize || ''}${bundle?.dataSize && bundle?.validity ? ' · ' : ''}${bundle?.validity || ''}`] : null,
                 ['Recipient', normalizePhone(recipientPhone)], 
                 ['Amount', formatAmount(bundle?.amountCents || 0, currency)], 
-                ['Pay via', pm?.name || paymentMethod], 
-                ['Wallet', normalizePhone(paymentPhone)]
-              ].filter(item => item !== null).map(([l, v]) => (
+                ...chargeRows(quote, currency),
+                ['Pay via', pm ? methodLabel(pm, balances, currency) : paymentMethod], 
+                paymentMethod === 'WALLET' ? null : ['Wallet', normalizePhone(paymentPhone)]
+              ].filter((item): item is [string, string] => item !== null).map(([l, v]) => (
                 <View key={l} style={S.sumRow}>
                   <Text style={S.sumLbl}>{l}</Text>
                   <Text style={S.sumVal}>{v}</Text>
@@ -496,7 +502,7 @@ export default function DataScreen() {
                 onPress={handlePay} 
                 disabled={loading}
               >
-                {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.btnTxt}>Pay {formatAmount(bundle?.amountCents || 0, currency)}</Text>}
+                {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.btnTxt}>Pay {formatAmount(payTotal, currency)}</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -506,7 +512,7 @@ export default function DataScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   scroll: { flex: 1 }, 
   body: { padding: 20 },
   err: { backgroundColor: Colors.errorBg, borderRadius: 12, padding: 12, marginBottom: 16 },
@@ -635,4 +641,4 @@ const S = StyleSheet.create({
   totalLbl: { fontSize: 16, fontWeight: 'bold', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   totalVal: { fontSize: 20, fontWeight: 'bold', color: Colors.primary, fontFamily: 'Rubik_700Bold' },
   modalBtns: { flexDirection: 'row', gap: 12 },
-});
+}));

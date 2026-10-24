@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 import { transactionsApi } from '../../lib/api';
 
 export default function TrackOrderScreen() {
@@ -53,7 +53,7 @@ export default function TrackOrderScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   body: { padding: 20 },
   hint: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', marginBottom: 20 },
   err: { backgroundColor: Colors.errorBg, borderRadius: 12, padding: 12, marginBottom: 12 },
@@ -65,4 +65,4 @@ const S = StyleSheet.create({
   tipCard: { backgroundColor: 'rgba(6,163,218,0.06)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(6,163,218,0.15)' },
   tipTitle: { fontSize: 14, fontWeight: '700', color: Colors.primary, fontFamily: 'Rubik_700Bold' },
   tipTxt: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', lineHeight: 22 },
-});
+}));

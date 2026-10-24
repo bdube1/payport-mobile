@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'r
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 const SOCIALS = [
   { icon: 'logo-whatsapp' as const,  label: 'WhatsApp',  handle: '+263 719 183 557', color: '#25D366', onPress: () => Linking.openURL('https://wa.me/263719183557') },
@@ -34,7 +34,7 @@ export default function SocialScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   body: { padding: 20, paddingTop: 24, gap: 12 },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: Colors.cardBg,
@@ -43,4 +43,4 @@ const S = StyleSheet.create({
   iconBadge: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cardLabel: { fontSize: 14.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold' },
   cardHandle: { fontSize: 12.5, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', marginTop: 1 },
-});
+}));

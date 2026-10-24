@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 type Props = {
   title: string;
@@ -26,7 +26,7 @@ export default function AppBar({ title, showBack = false, rightElement }: Props)
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   bar: {
     backgroundColor: Colors.primary,
     flexDirection: 'row',
@@ -37,4 +37,4 @@ const styles = StyleSheet.create({
   },
   side:     { width: 48, alignItems: 'center', justifyContent: 'center' },
   title:    { flex: 1, fontSize: 20, fontWeight: 'bold', color: '#fff', fontFamily: 'Rubik_700Bold', textAlign: 'center' },
-});
+}));

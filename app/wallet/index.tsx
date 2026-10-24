@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import QrScanner from '../../components/ui/QrScanner';
+import { Colors, themed } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { walletApi, productsApi, startPayment, paymentError, generateReference, formatAmount, normalizePhone, liveCurrencies } from '../../lib/api';
 
 type W = { walletRef: string; currency: string; balanceMinor: number; status: string; dailyOutMinor?: number; usedTodayMinor?: number };
-type Tab = 'topup' | 'send' | 'cashout' | 'convert' | 'merchant' | 'cards';
-const ACTIONS: [Tab, string][] = [['topup', 'Top up'], ['send', 'Send money'], ['cashout', 'Cash out'], ['convert', 'Convert'], ['merchant', 'Pay merchant'], ['cards', 'Cards']];
+type Tab = 'topup' | 'send' | 'cashout' | 'convert' | 'merchant';
+const ACTIONS: [Tab, string][] = [['topup', 'Top up'], ['send', 'Send money'], ['cashout', 'Cash out'], ['convert', 'Convert'], ['merchant', 'Pay merchant']];
 
 const toMinor = (s: string) => {
   const v = Number(String(s).replace(',', '.'));
@@ -31,7 +33,7 @@ export default function WalletScreen() {
   const [wallets, setWallets] = useState<W[]>([]);
   const [selected, setSelected] = useState('');
   const params = useLocalSearchParams<{ a?: string; ref?: string }>();
-  const [tab, setTab] = useState<Tab>(ACTIONS.some(([k]) => k === params.a) ? (params.a as Tab) : 'topup');
+  const [tab] = useState<Tab>(ACTIONS.some(([k]) => k === params.a) ? (params.a as Tab) : 'topup');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -77,32 +79,16 @@ export default function WalletScreen() {
           <>
             {error ? <View style={S.err}><Text style={S.errTxt}>{error}</Text></View> : null}
             {notice ? <View style={S.ok}><Text style={S.okTxt}>{notice}</Text></View> : null}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              {wallets.map((x) => (
-                <TouchableOpacity key={x.walletRef} onPress={() => setSelected(x.walletRef)} style={[S.wcard, x.walletRef === w?.walletRef && S.wcardOn]}>
-                  <Text style={[S.wsub, x.walletRef === w?.walletRef && S.white]}>{x.currency} · {x.walletRef}{x.status !== 'ACTIVE' ? ` · ${x.status}` : ''}</Text>
-                  <Text style={[S.wbal, x.walletRef === w?.walletRef && S.white]}>{formatAmount(x.balanceMinor, x.currency)}</Text>
-                  {x.dailyOutMinor != null ? <Text style={[S.wsub, x.walletRef === w?.walletRef && S.white]}>Today {formatAmount(x.usedTodayMinor || 0, x.currency)} / {formatAmount(x.dailyOutMinor, x.currency)}</Text> : null}
-                </TouchableOpacity>
-              ))}
-              {enabled ? <OpenWallet existing={wallets.map((x) => x.currency)} busy={busy}
-                onOpen={(c) => run(() => walletApi.open(c), (d) => `Your ${d.currency} wallet ${d.walletRef} is ready.`)} /> : null}
-            </ScrollView>
+            {enabled && wallets.length === 0 ? <OpenWallet existing={[]} busy={busy}
+              onOpen={(c) => run(() => walletApi.open(c), (d) => `Your ${d.currency} wallet ${d.walletRef} is ready.`)} /> : null}
             {w ? <>
-              <View style={S.chipRow}>
-                {ACTIONS.map(([k, t]) => (
-                  <TouchableOpacity key={k} onPress={() => { setTab(k); setError(''); setNotice(''); }} style={[S.chip, tab === k && S.chipOn]}>
-                    <Text style={[S.chipTxt, tab === k && S.white]}>{t}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
               <View style={S.card}>
+                {wallets.length > 1 ? <WalletPick wallets={wallets} value={w.walletRef} onChange={setSelected} /> : null}
                 {tab === 'topup' && <TopUp w={w} phone={user.phone} onError={setError} onStarted={(ref) => router.push(`/processing/${ref}` as any)} />}
                 {tab === 'send' && <Send w={w} busy={busy} run={run} />}
                 {tab === 'convert' && <Convert w={w} wallets={wallets} busy={busy} run={run} onError={setError} />}
                 {tab === 'cashout' && <CashOut w={w} busy={busy} run={run} onError={setError} />}
                 {tab === 'merchant' && <PayMerchant w={w} busy={busy} run={run} onError={setError} />}
-                {tab === 'cards' && <Cards wallets={wallets} onError={setError} onNotice={setNotice} />}
               </View>
             </> : null}
           </>
@@ -282,16 +268,36 @@ function CashOut({ w, busy, run, onError }: { w: W; busy: boolean; run: any; onE
 function PayMerchant({ w, busy, run, onError }: { w: W; busy: boolean; run: any; onError: (m: string) => void }) {
   const [code, setCode] = useState('');
   const [m, setM] = useState<any>(null);
+  const [mode, setMode] = useState<'scan' | 'code'>('code');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [pin, setPin] = useState('');
   const cents = toMinor(amount);
   const charge = useCharge('MERCHANT_PAYMENT', w, cents);
   const reset = () => { setCode(''); setM(null); setAmount(''); setNote(''); setPin(''); };
-  if (!m) return <CodeStep title="Pay a merchant" label="Merchant code" code={code} setCode={setCode} onNext={async () => {
+  const find = async (c: string) => {
     onError('');
-    try { const r = await walletApi.merchant(code); setM(r.data?.data); } catch (e) { onError(errMsg(e, 'No merchant with that code.')); }
-  }} />;
+    try { const r = await walletApi.merchant(c); setM(r.data?.data); } catch (e) { onError(errMsg(e, 'No merchant with that code.')); }
+  };
+  if (!m) return <>
+    <Text style={S.h}>Pay a merchant</Text>
+    <View style={[S.chipRow, { marginTop: 12 }]}>
+      <TouchableOpacity onPress={() => setMode('scan')} style={[S.modeBtn, mode === 'scan' && S.modeOn]}>
+        <Ionicons name="qr-code-outline" size={22} color={mode === 'scan' ? '#fff' : Colors.primary} />
+        <Text style={[S.modeTxt, mode === 'scan' && S.white]}>Scan QR</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setMode('code')} style={[S.modeBtn, mode === 'code' && S.modeOn]}>
+        <Ionicons name="keypad-outline" size={22} color={mode === 'code' ? '#fff' : Colors.primary} />
+        <Text style={[S.modeTxt, mode === 'code' && S.white]}>Enter code</Text>
+      </TouchableOpacity>
+    </View>
+    {mode === 'code' ? <>
+      <Text style={S.lbl}>Merchant code</Text>
+      <TextInput style={[S.input, S.code]} value={code} onChangeText={(t: string) => setCode(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor={Colors.textSecondary} />
+      <Btn title="Continue" color={Colors.primary} disabled={code.length !== 6} onPress={() => find(code)} />
+    </> : null}
+    <QrScanner visible={mode === 'scan'} onClose={() => setMode('code')} onCode={(c) => { setMode('code'); setCode(c); find(c); }} />
+  </>;
   const takes = !m.currencies?.length || m.currencies.includes(w.currency);
   return <>
     <Text style={S.h}>Pay a merchant</Text>
@@ -308,72 +314,21 @@ function PayMerchant({ w, busy, run, onError }: { w: W; busy: boolean; run: any;
   </>;
 }
 
-const SCHEME: Record<string, string> = { VISA: 'VISA', ZIMSWITCH: 'ZimSwitch' };
-const CARD_STATUS: Record<string, string> = { REQUESTED: 'Requested', ACTIVE: 'Active', FROZEN: 'Frozen', BLOCKED: 'Blocked', CANCELLED: 'Cancelled', REFUSED: 'Refused' };
-
-function Cards({ wallets, onError, onNotice }: { wallets: W[]; onError: (m: string) => void; onNotice: (m: string) => void }) {
-  const [data, setData] = useState<any>(null);
-  const [form, setForm] = useState<any>(null);
-  const [pin, setPin] = useState('');
-  const [busy, setBusy] = useState(false);
-  const load = () => walletApi.cards().then((r) => setData(r.data?.data || { cards: [] })).catch((e) => { setData({ cards: [] }); onError(errMsg(e, 'Could not load your cards.')); });
-  useEffect(() => { load(); }, []);
-  const act = async (fn: () => Promise<any>, ok: string) => {
-    setBusy(true); onError(''); onNotice('');
-    try { await fn(); onNotice(ok); setPin(''); setForm(null); await load(); }
-    catch (e) { onError(errMsg(e, 'That did not work. Please try again.')); }
-    finally { setBusy(false); }
-  };
-  if (!data) return <ActivityIndicator color={Colors.primary} />;
-  const schemes: string[] = (data.options?.schemes || [{ scheme: 'VISA' }, { scheme: 'ZIMSWITCH' }]).map((x: any) => x.scheme);
-  const set = (k: string, v: string) => setForm((f: any) => ({ ...f, [k]: v }));
+function WalletPick({ wallets, value, onChange }: { wallets: W[]; value: string; onChange: (ref: string) => void }) {
   return <>
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Text style={S.h}>My cards</Text>
-      {!form ? <TouchableOpacity onPress={() => setForm({ walletRef: wallets[0]?.walletRef || '', scheme: 'VISA', form: 'VIRTUAL', nameOnCard: '', deliveryAddress: '' })} style={[S.chip, S.chipOn]}>
-        <Text style={[S.chipTxt, S.white]}>Get a card</Text></TouchableOpacity> : null}
+    <Text style={[S.lbl, { marginTop: 0 }]}>Wallet</Text>
+    <View style={S.chipRow}>
+      {wallets.map((x) => (
+        <TouchableOpacity key={x.walletRef} onPress={() => onChange(x.walletRef)} style={[S.pick, value === x.walletRef && S.pickOn]}>
+          <Text style={[S.pickCcy, value === x.walletRef && S.white]}>{x.currency}</Text>
+          <Text style={[S.pickBal, value === x.walletRef && S.white]}>{formatAmount(x.balanceMinor, x.currency)}</Text>
+        </TouchableOpacity>
+      ))}
     </View>
-    {form ? <View style={[S.party, { marginTop: 10 }]}>
-      <Text style={S.lbl}>Wallet</Text>
-      <View style={S.chipRow}>{wallets.map((x) => <TouchableOpacity key={x.walletRef} onPress={() => set('walletRef', x.walletRef)} style={[S.chip, form.walletRef === x.walletRef && S.chipOn]}><Text style={[S.chipTxt, form.walletRef === x.walletRef && S.white]}>{x.currency}</Text></TouchableOpacity>)}</View>
-      <Text style={S.lbl}>Card</Text>
-      <View style={S.chipRow}>{schemes.map((c) => <TouchableOpacity key={c} onPress={() => set('scheme', c)} style={[S.chip, form.scheme === c && S.chipOn]}><Text style={[S.chipTxt, form.scheme === c && S.white]}>{SCHEME[c] || c}</Text></TouchableOpacity>)}</View>
-      <Text style={S.lbl}>Type</Text>
-      <View style={S.chipRow}>{[['VIRTUAL', 'Virtual'], ['PHYSICAL', 'Physical']].map(([v, t]) => <TouchableOpacity key={v} onPress={() => set('form', v)} style={[S.chip, form.form === v && S.chipOn]}><Text style={[S.chipTxt, form.form === v && S.white]}>{t}</Text></TouchableOpacity>)}</View>
-      <Field label="Name on card" value={form.nameOnCard} onChangeText={(t: string) => set('nameOnCard', t.toUpperCase())} maxLength={26} autoCapitalize="characters" />
-      {form.form === 'PHYSICAL' ? <Field label="Delivery address" value={form.deliveryAddress} onChangeText={(t: string) => set('deliveryAddress', t)} /> : null}
-      <Field label="PIN" value={pin} onChangeText={(t: string) => setPin(t.replace(/\D/g, ''))} keyboardType="number-pad" secureTextEntry maxLength={6} />
-      <Btn title="Request card" disabled={busy || pin.length < 4 || !form.nameOnCard.trim()} onPress={() => act(() => walletApi.requestCard({ ...form, pin }), 'Card requested.')} />
-      <TouchableOpacity onPress={() => setForm(null)}><Text style={[S.link, { textAlign: 'center', marginTop: 10 }]}>Cancel</Text></TouchableOpacity>
-    </View> : null}
-    {data.cards.length === 0 && !form ? <Text style={[S.muted, { marginTop: 8 }]}>No cards yet.</Text> : null}
-    {data.cards.map((c: any) => (
-      <View key={c.cardRef} style={[S.cardFace, { backgroundColor: c.scheme === 'VISA' ? '#1a1f71' : '#0b6b3a' }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={S.cardSmall}>{c.form === 'VIRTUAL' ? 'Virtual' : 'Physical'} · {c.currency} {c.walletRef}</Text>
-          <Text style={[S.cardSmall, { fontWeight: '800' }]}>{SCHEME[c.scheme]}</Text>
-        </View>
-        <Text style={S.cardPan}>{c.maskedPan || (c.last4 ? `•••• •••• •••• ${c.last4}` : '•••• •••• •••• ••••')}</Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={S.cardSmall}>{c.nameOnCard}</Text><Text style={S.cardSmall}>{c.expiry || ''}</Text>
-        </View>
-        <Text style={[S.cardSmall, { marginTop: 8 }]}>{CARD_STATUS[c.status] || c.status}{c.note ? ` · ${c.note}` : ''}</Text>
-        {['REQUESTED', 'ACTIVE', 'FROZEN'].includes(c.status) ? <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, alignItems: 'center' }}>
-          <TextInput value={pin} onChangeText={(t) => setPin(t.replace(/\D/g, ''))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="PIN" placeholderTextColor="#ccc" style={S.cardPin} />
-          {c.status === 'ACTIVE' ? <CardBtn t="Freeze" disabled={busy || pin.length < 4} onPress={() => act(() => walletApi.cardAction(c.cardRef, 'FREEZE', pin), 'Card frozen.')} /> : null}
-          {c.status === 'FROZEN' ? <CardBtn t="Unfreeze" disabled={busy || pin.length < 4} onPress={() => act(() => walletApi.cardAction(c.cardRef, 'UNFREEZE', pin), 'Card unfrozen.')} /> : null}
-          <CardBtn t="Cancel" disabled={busy || pin.length < 4} onPress={() => Alert.alert('Cancel card', 'Are you sure?', [{ text: 'No' }, { text: 'Yes', style: 'destructive', onPress: () => act(() => walletApi.cardAction(c.cardRef, 'CANCEL', pin), 'Card cancelled.') }])} />
-        </View> : null}
-      </View>
-    ))}
   </>;
 }
 
-function CardBtn({ t, onPress, disabled }: { t: string; onPress: () => void; disabled?: boolean }) {
-  return <TouchableOpacity disabled={disabled} onPress={onPress} style={[S.cardBtn, disabled && { opacity: 0.5 }]}><Text style={S.cardBtnTxt}>{t}</Text></TouchableOpacity>;
-}
-
-const S = StyleSheet.create({
+const S = themed(() => ({
   body: { padding: 20, paddingBottom: 60 },
   card: { backgroundColor: Colors.cardBg, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.borderLight },
   h: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
@@ -398,6 +353,13 @@ const S = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: Colors.borderLight },
   rowL: { fontSize: 14, color: Colors.textPrimary },
   rowR: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
+  modeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 16, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.cardBg },
+  modeOn: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  modeTxt: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  pick: { flex: 1, minWidth: 120, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.cardBg },
+  pickOn: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  pickCcy: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary },
+  pickBal: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary, marginTop: 2 },
   code: { fontSize: 24, letterSpacing: 8, textAlign: 'center', fontWeight: '700' },
   party: { backgroundColor: Colors.lightCyan, borderRadius: 14, padding: 14, marginTop: 12 },
   partyName: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary, marginVertical: 2 },
@@ -408,4 +370,4 @@ const S = StyleSheet.create({
   cardPin: { width: 70, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff' },
   cardBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' },
   cardBtnTxt: { color: '#fff', fontWeight: '700', fontSize: 13 },
-});
+}));

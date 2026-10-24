@@ -1,7 +1,7 @@
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
-import { Colors } from '../../constants/colors';
+import { Colors, themed } from '../../constants/colors';
 
 const SECTIONS = [
   {
@@ -82,7 +82,7 @@ export default function TermsScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const S = themed(() => ({
   body: { padding: 20, paddingBottom: 40 },
   intro: { fontSize: 14, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', lineHeight: 22, marginBottom: 24 },
   section: { marginBottom: 20 },
@@ -91,4 +91,4 @@ const S = StyleSheet.create({
   contactCard: { backgroundColor: 'rgba(6,163,218,0.06)', borderRadius: 14, padding: 16, marginTop: 8, borderWidth: 1, borderColor: 'rgba(6,163,218,0.15)' },
   contactTitle: { fontSize: 14, fontWeight: '700', color: Colors.primary, fontFamily: 'Rubik_700Bold', marginBottom: 8 },
   contactLine: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Nunito_400Regular', lineHeight: 20 },
-});
+}));
