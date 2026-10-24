@@ -80,6 +80,7 @@ export default function CardDetail() {
               <SchemeMark scheme={c.scheme} />
             </View>
           </View>
+          <Text style={S.linked}>Linked to {(c.currencies || [c.currency]).join(' and ')} {(c.currencies || []).length > 1 ? 'wallets' : 'wallet'}</Text>
           {error ? <Text style={[S.err, { marginTop: 12 }]}>{error}</Text> : null}
           {c.status === 'ACTIVE' || c.status === 'FROZEN' ? (
             <TouchableOpacity style={S.action} onPress={() => setAsk(blocked ? 'UNBLOCK' : 'BLOCK')}>
@@ -110,6 +111,7 @@ const S = themed(() => ({
   action: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 26, paddingVertical: 6 },
   actionIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F28C6B', alignItems: 'center', justifyContent: 'center' },
   actionTxt: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_600SemiBold' },
+  linked: { marginTop: 12, fontSize: 13, color: Colors.textSecondary },
   status: { marginTop: 20, fontSize: 14, color: Colors.textSecondary },
   err: { color: Colors.red },
 }));

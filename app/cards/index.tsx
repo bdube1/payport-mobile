@@ -56,21 +56,20 @@ export default function CardsScreen() {
 }
 
 function AddCard({ visible, form, wallets, schemes, onClose, onDone }: { visible: boolean; form: Form; wallets: any[]; schemes: string[]; onClose: () => void; onDone: () => void }) {
-  const [walletRef, setWalletRef] = useState('');
   const [scheme, setScheme] = useState('VISA');
   const [nickname, setNickname] = useState('');
   const [address, setAddress] = useState('');
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  // ZimSwitch cards are linked to a ZWG wallet.
-  const usable = wallets.filter((w) => scheme !== 'ZIMSWITCH' || w.currency === 'ZWG');
-  const ref = usable.some((w) => w.walletRef === walletRef) ? walletRef : usable[0]?.walletRef || '';
-  const ok = !!ref && nickname.trim().length > 0 && pin.length >= 4 && (form === 'VIRTUAL' || address.trim().length >= 5) && !busy;
+  // VISA: the USD wallet. ZimSwitch (dual interface): the USD and ZWG wallets together.
+  const linked = scheme === 'VISA' ? wallets.filter((w) => w.currency === 'USD') : wallets.filter((w) => w.currency === 'USD' || w.currency === 'ZWG');
+  const linkedText = linked.length ? `Linked to your ${linked.map((w) => w.currency).join(' and ')} wallet${linked.length > 1 ? 's' : ''}` : scheme === 'VISA' ? 'Open a USD wallet first' : 'Open a USD or ZWG wallet first';
+  const ok = linked.length > 0 && nickname.trim().length > 0 && pin.length >= 4 && (form === 'VIRTUAL' || address.trim().length >= 5) && !busy;
   const submit = async () => {
     setBusy(true); setError('');
     try {
-      await walletApi.requestCard({ walletRef: ref, scheme, form, nickname: nickname.trim(), deliveryAddress: form === 'PHYSICAL' ? address.trim() : null, pin });
+      await walletApi.requestCard({ scheme, form, nickname: nickname.trim(), deliveryAddress: form === 'PHYSICAL' ? address.trim() : null, pin });
       setNickname(''); setAddress(''); setPin('');
       onDone();
     } catch (e) { setError(errMsg(e, 'The card could not be requested.')); }
@@ -87,11 +86,7 @@ function AddCard({ visible, form, wallets, schemes, onClose, onDone }: { visible
             <TouchableOpacity key={s} onPress={() => setScheme(s)} style={[S.chip, scheme === s && S.chipOn]}>
               <Text style={[S.chipTxt, scheme === s && { color: '#fff' }]}>{s === 'ZIMSWITCH' ? 'ZimSwitch' : 'VISA'}</Text>
             </TouchableOpacity>))}</View>
-          <Text style={S.lbl}>Wallet</Text>
-          <View style={S.chips}>{usable.map((w) => (
-            <TouchableOpacity key={w.walletRef} onPress={() => setWalletRef(w.walletRef)} style={[S.chip, ref === w.walletRef && S.chipOn]}>
-              <Text style={[S.chipTxt, ref === w.walletRef && { color: '#fff' }]}>{w.currency} · {w.walletRef}</Text>
-            </TouchableOpacity>))}</View>
+          <Text style={[S.lbl, { fontWeight: '600', color: linked.length ? Colors.textSecondary : Colors.red }]}>{linkedText}</Text>
           <Text style={S.lbl}>Nickname</Text>
           <TextInput value={nickname} onChangeText={setNickname} maxLength={40} style={S.input} placeholderTextColor={Colors.textSecondary} />
           {form === 'PHYSICAL' ? <><Text style={S.lbl}>Delivery address</Text>
