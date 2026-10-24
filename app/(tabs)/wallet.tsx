@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import { Colors } from '../../constants/colors';
@@ -36,6 +36,7 @@ export default function WalletScreen() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
+    setError('');
     try {
       const r = await walletApi.list();
       const d = r.data?.data || {};
@@ -49,6 +50,8 @@ export default function WalletScreen() {
     }
   }, []);
   useEffect(() => { if (user) load(); else setLoading(false); }, [user, load]);
+  // Refresh each time the tab is opened, so a wallet switched on in ops shows without restarting the app.
+  useFocusEffect(useCallback(() => { if (user) load(); }, [user, load]));
 
   const run = async (fn: () => Promise<any>, ok: (d: any) => string) => {
     setBusy(true); setError(''); setNotice('');
@@ -65,6 +68,8 @@ export default function WalletScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={S.body} refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}>
         {loading ? <ActivityIndicator color={Colors.primary} /> : !user ? (
           <Text style={S.muted}>Log in to use your PayPort wallet.</Text>
+        ) : error && wallets.length === 0 ? (
+          <View style={S.card}><Text style={S.h}>PayPort Wallet</Text><Text style={S.errTxt}>{error}</Text><Text style={S.muted}>Pull down to try again.</Text></View>
         ) : !enabled && wallets.length === 0 ? (
           <View style={S.card}><Text style={S.h}>PayPort Wallet</Text><Text style={S.muted}>The wallet is not available yet. You can keep paying with mobile money and cards.</Text></View>
         ) : (
