@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Modal, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -60,11 +60,14 @@ export default function BillsScreen() {
   const single = !!prefillBillerCode;
   const selectBiller = (b: any) => router.push({ pathname: '/bills', params: { biller: b.code } } as any);
 
-  const lookupCustomer = async () => {
-    if (!accountRef.trim()) { setError('Enter the account/meter number'); return; }
+  // The account name appears as soon as the number is complete, as on the website: no button.
+  const lookupSeq = useRef(0);
+  const lookupCustomer = async (acct: string) => {
+    const seq = ++lookupSeq.current;
     setInfoLoading(true); setError('');
     try {
-      const r = await billersApi.lookup(biller.code, accountRef.trim().replace(/\s+/g, ''), currency);
+      const r = await billersApi.lookup(biller.code, acct, currency);
+      if (seq !== lookupSeq.current) return;
       const a = r.data?.data || {};
       if (!a.payable) { setCustomerInfo(null); setError(a.notPayableReason || 'This account cannot be paid right now.'); return; }
       const accepted: string[] = a.acceptedCurrencies?.length ? a.acceptedCurrencies : [a.currency || currency];
@@ -72,9 +75,17 @@ export default function BillsScreen() {
       const d = a.details || {};
       setCustomerInfo({ customerName: a.holderName, outstandingBalance: d.balanceMinor ? Number(d.balanceMinor) / 100 : 0, acceptedCurrencies: accepted });
     }
-    catch (e: any) { setError(e.response?.data?.message || 'Account not found'); setCustomerInfo(null); }
-    finally { setInfoLoading(false); }
+    catch (e: any) { if (seq !== lookupSeq.current) return; setError(e.response?.data?.message || 'Account not found'); setCustomerInfo(null); }
+    finally { if (seq === lookupSeq.current) setInfoLoading(false); }
   };
+
+  useEffect(() => {
+    const acct = accountRef.trim().replace(/\s+/g, '');
+    if (!biller || acct.length <= 5) { lookupSeq.current++; setInfoLoading(false); setCustomerInfo(null); return; }
+    const t = setTimeout(() => lookupCustomer(acct), 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountRef, biller?.code, currency]);
 
   const pm = paymentMethods.find((m: any) => m.code === paymentMethod);
   const amtCents = amount ? Math.round(parseFloat(amount) * 100) : 0;
@@ -85,6 +96,7 @@ export default function BillsScreen() {
     setError('');
     if (!biller) { setError('Select a biller'); return; }
     if (!accountRef.trim()) { setError('Enter the account number'); return; }
+    if (!customerInfo) { setError(infoLoading ? 'Checking the account…' : 'Check the account number'); return; }
     if (!amount || amtCents < 1) { setError('Enter a valid amount'); return; }
     if (!paymentMethod) { setError('Select a payment method'); return; }
     if (paymentMethod === 'WALLET' ? walletPin.length < 4 : normalizePhone(paymentPhone).length < 12) { setError(paymentMethod === 'WALLET' ? 'Enter your PIN' : 'Enter your wallet number'); return; }
@@ -167,10 +179,7 @@ export default function BillsScreen() {
                 placeholderTextColor={Colors.textSecondary}
                 keyboardType={biller.code === 'ZESA' ? 'numeric' : 'default'}
                 style={[S.lookupInput, customerInfo && { borderColor: Colors.green }]} />
-              <TouchableOpacity onPress={lookupCustomer} disabled={infoLoading || !accountRef.trim()}
-                style={[S.lookupBtn, !accountRef.trim() && { opacity: 0.4 }]}>
-                {infoLoading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.lookupBtnTxt}>Look up</Text>}
-              </TouchableOpacity>
+              {infoLoading && <ActivityIndicator color={Colors.primary} size="small" style={{ position: 'absolute', right: 18, top: 16 }} />}
             </View>
             {customerInfo && (
               <View style={S.customerCard}>
@@ -248,8 +257,6 @@ const S = themed(() => ({
   billerName: { fontSize: 11.5, fontWeight: '700', color: Colors.textPrimary, fontFamily: 'Rubik_700Bold', textAlign: 'center' },
   lookupRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
   lookupInput: { flex: 1, borderWidth: 1.5, borderColor: Colors.border, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 14, fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.cardBg, fontFamily: 'Nunito_400Regular' },
-  lookupBtn: { backgroundColor: Colors.primary, borderRadius: 24, paddingHorizontal: 18, justifyContent: 'center', alignItems: 'center' },
-  lookupBtnTxt: { color: '#fff', fontWeight: '700', fontSize: 14, fontFamily: 'Rubik_700Bold' },
   customerCard: { backgroundColor: Colors.successBg, borderRadius: 12, padding: 12, marginBottom: 4, borderWidth: 1, borderColor: '#A5D6A7' },
   customerName: { fontSize: 14, fontWeight: '700', color: Colors.green, fontFamily: 'Rubik_700Bold' },
   customerBal: { fontSize: 12, color: Colors.orange, fontFamily: 'Rubik_700Bold', marginTop: 2 },
