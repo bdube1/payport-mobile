@@ -88,7 +88,8 @@ export default function DataScreen() {
     // For Econet, use the bundle endpoint (routed through the shared, authenticated
     // api client — this used to hit a hardcoded localhost URL directly, which
     // meant it could never actually work outside of local development).
-    if (network === 'ECONET') {
+    // Every network uses the same catalogue as the web and USSD: the bundles switched on in ops.
+    {
       const fetchEconetBundles = async () => {
         try {
           const response = await productsApi.getBundles(network, currency);
@@ -96,10 +97,10 @@ export default function DataScreen() {
           const bundleData = response.data || [];
           const formattedBundles = bundleData.map((b: any) => ({
             name: b.bundleName,
-            amountCents: b.priceValue * 100,
-            cents: b.priceValue * 100,
+            amountCents: Math.round(b.priceValue * 100),
+            cents: Math.round(b.priceValue * 100),
             dataSize: b.dataVolume,
-            validity: b.validity,
+            validity: b.validity || b.description,
             bundleCode: b.bundleCode,
             category: b.category || 'Other'
           }));
@@ -121,25 +122,12 @@ export default function DataScreen() {
           }
           
         } catch (err) {
-          console.error('Failed to load Econet bundles:', err);
+          console.error('Failed to load bundles:', err);
         } finally {
           setBundlesLoading(false);
         }
       };
       fetchEconetBundles();
-    } else {
-      // For other networks, use old method
-      productsApi.getDataBundles(network, currency)
-        .then(r => { 
-          const list = r.data?.data || r.data?.bundles || r.data || []; 
-          const formatted = Array.isArray(list) ? list : [];
-          setBundles(formatted);
-          // For non-Econet, create a default category
-          setCategories(['All Bundles']);
-          setSelectedCategory('All Bundles');
-        })
-        .catch(() => setBundles([]))
-        .finally(() => setBundlesLoading(false));
     }
   }, [network, currency]);
 

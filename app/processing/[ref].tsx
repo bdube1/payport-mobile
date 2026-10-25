@@ -18,6 +18,8 @@ const STEPS = [
 // REQUIRES_PAYMENT and PROCESSING are in progress; everything else is final. TIMED_OUT is
 // final: money that arrives after the window is refunded, never delivered.
 const IN_PROGRESS = ['REQUIRES_PAYMENT', 'PROCESSING'];
+// Paid, delivery still being confirmed: shown as such (not as a failure) and checked again every 15 seconds.
+const DELIVERING = ['FULFILMENT_PENDING', 'PAYMENT_CONFIRMED', 'FULFILMENT_RETRY'];
 
 function outcomeOf(tx: any): string {
   if (!tx) return 'PROCESSING';
@@ -66,7 +68,7 @@ export default function ProcessingScreen() {
       if (!IN_PROGRESS.includes(outcome)) {
         clearInterval(pollRef.current!);
         // Delivery not yet confirmed by the provider: keep checking, slowly.
-        if (outcome === 'NO_RESPONSE' && data.status === 'FULFILMENT_PENDING') pollRef.current = setInterval(poll, 15000);
+        if (outcome === 'NO_RESPONSE' && DELIVERING.includes(data.status)) pollRef.current = setInterval(poll, 15000);
         if (!hapticFired.current) {
           hapticFired.current = true;
           await Haptics.notificationAsync(outcome === 'SUCCEEDED' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
@@ -86,7 +88,7 @@ export default function ProcessingScreen() {
   const outcome    = outcomeOf(tx);
   const message    = tx?.outcomeMessage || tx?.failureReason || '';
   const isComplete = outcome === 'SUCCEEDED';
-  const confirmingDelivery = outcome === 'NO_RESPONSE' && status === 'FULFILMENT_PENDING';
+  const confirmingDelivery = outcome === 'NO_RESPONSE' && DELIVERING.includes(status);
   const isTimedOut = outcome === 'TIMED_OUT' || (outcome === 'NO_RESPONSE' && !confirmingDelivery);
   const isRefunded = outcome === 'REFUNDED';
   const isFailed   = outcome === 'FAILED' || isTimedOut || outcome === 'CANCELLED';
@@ -110,6 +112,7 @@ export default function ProcessingScreen() {
         <View style={[S.icon, { backgroundColor: isComplete ? Colors.green : isFailed ? Colors.red : Colors.primary }]}>
           {isComplete ? <Ionicons name="checkmark" size={40} color="#fff" /> :
            isFailed   ? <Ionicons name="close" size={40} color="#fff" /> :
+           confirmingDelivery ? <Ionicons name="time-outline" size={40} color="#fff" /> :
                          <ActivityIndicator size="large" color="#fff" />}
         </View>
         <Text style={S.title}>{title}</Text>
@@ -120,7 +123,7 @@ export default function ProcessingScreen() {
         <View style={S.stepsCard}>
           {STEPS.map((s, idx) => {
             const done   = idx < displayIdx;
-            const active = idx === displayIdx && !isComplete && !isFailed && !isRefunded;
+            const active = idx === displayIdx && !isComplete && !isFailed && !isRefunded && !confirmingDelivery;
             return (
               <View key={s.key} style={[S.stepRow, idx < STEPS.length - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.borderLight }]}>
                 <View style={[S.dot, done && { backgroundColor: Colors.green }, active && { backgroundColor: Colors.primary }]}>
@@ -160,6 +163,12 @@ export default function ProcessingScreen() {
           <View style={S.btnRow}>
             <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={S.btnOutline}><Text style={S.btnOutlineTxt}>Home</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => router.push(`/status/${ref}`)} style={S.btnPrimary}><Text style={S.btnTxt}>View Receipt</Text></TouchableOpacity>
+          </View>
+        )}
+        {confirmingDelivery && (
+          <View style={S.btnRow}>
+            <TouchableOpacity onPress={() => router.push(`/status/${ref}`)} style={S.btnOutline}><Text style={S.btnOutlineTxt}>Track</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={S.btnPrimary}><Text style={S.btnTxt}>Home</Text></TouchableOpacity>
           </View>
         )}
         {(isFailed || isRefunded) && (
