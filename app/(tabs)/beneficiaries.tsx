@@ -222,14 +222,14 @@ export default function BeneficiariesScreen() {
             </View>
 
             <Text style={S.lbl}>Name</Text>
-            <TextInput value={name} onChangeText={setName} placeholder="e.g. Mum" placeholderTextColor={Colors.textSecondary} style={S.input} />
+            <TextInput value={name} onChangeText={setName} placeholderTextColor={Colors.textSecondary} style={S.input} />
 
             {type === 'PHONE' ? (
               <>
                 <Text style={S.lbl}>Phone Number</Text>
                 <View style={S.phoneRow}>
                   <View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View>
-                  <TextInput value={phone} onChangeText={setPhone} placeholder="077 123 4567" placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} />
+                  <TextInput value={phone} onChangeText={setPhone} placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} />
                 </View>
               </>
             ) : (

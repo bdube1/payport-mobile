@@ -37,6 +37,7 @@ export default function WalletScreen() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState('');
 
   const load = useCallback(async () => {
     setError('');
@@ -58,12 +59,27 @@ export default function WalletScreen() {
 
   const run = async (fn: () => Promise<any>, ok: (d: any) => string) => {
     setBusy(true); setError(''); setNotice('');
-    try { const r = await fn(); setNotice(ok(r?.data?.data || {})); await load(); return true; }
+    try { const r = await fn(); setDone(ok(r?.data?.data || {})); await load(); return true; }
     catch (e) { setError(errMsg(e, 'That did not work. Please try again.')); return false; }
     finally { setBusy(false); }
   };
 
   const w = wallets.find((x) => x.walletRef === selected) || wallets[0];
+
+  // A completed payment, transfer or conversion stays on a success screen until it is closed.
+  if (done) return (
+    <GradientScreen>
+      <View style={S.doneWrap}>
+        <View style={S.doneIcon}><Ionicons name="checkmark" size={46} color="#fff" /></View>
+        <Text style={S.doneTitle}>Successful</Text>
+        <Text style={S.doneMsg}>{done}</Text>
+        <TouchableOpacity style={[S.btn, { backgroundColor: Colors.primary, alignSelf: 'stretch' }]}
+          onPress={() => { setDone(''); if (router.canGoBack()) router.back(); else router.replace('/(tabs)' as any); }}>
+          <Text style={S.btnTxt}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </GradientScreen>
+  );
 
   return (
     <GradientScreen>
@@ -148,10 +164,10 @@ function TopUp({ w, phone, onError, onStarted }: { w: W; phone: string; onError:
   };
   return <>
     <Text style={S.h}>Top up {w.currency} wallet</Text>
-    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" />
+    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" />
     <Text style={S.lbl}>Pay with</Text>
     <View style={S.chipRow}>{methods.map((m) => <TouchableOpacity key={m.code} onPress={() => setMethod(m.code)} style={[S.chip, method === m.code && S.chipOn]}><Text style={[S.chipTxt, method === m.code && S.white]}>{m.name}</Text></TouchableOpacity>)}</View>
-    <Field label="Paying phone number" value={payPhone} onChangeText={setPayPhone} keyboardType="phone-pad" placeholder="+263771234567" />
+    <Field label="Paying phone number" value={payPhone} onChangeText={setPayPhone} keyboardType="phone-pad" />
     <Btn title={busy ? 'Starting…' : 'Top up'} onPress={go} disabled={!ok} />
   </>;
 }
@@ -166,8 +182,8 @@ function Send({ w, busy, run }: { w: W; busy: boolean; run: any }) {
   const ok = to.trim().length >= 9 && cents > 0 && pin.length >= 4 && !busy;
   return <>
     <Text style={S.h}>Send money</Text>
-    <Field label="To (phone or wallet number)" value={to} onChangeText={setTo} placeholder="+263771234567 or W…" autoCapitalize="characters" />
-    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" />
+    <Field label="To (phone or wallet number)" value={to} onChangeText={setTo} autoCapitalize="characters" />
+    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" />
     <ChargeLine charge={charge} ccy={w.currency} />
     <Field label="PIN" value={pin} onChangeText={(t: string) => setPin(t.replace(/\D/g, ''))} keyboardType="number-pad" secureTextEntry maxLength={6} />
     <Btn title="Send" disabled={!ok} onPress={async () => {
@@ -187,7 +203,7 @@ function Convert({ w, wallets, busy, run, onError }: { w: W; wallets: W[]; busy:
   if (targets.length === 0) return <Text style={S.muted}>Open a wallet in another currency to convert between your wallets.</Text>;
   return <>
     <Text style={S.h}>Convert between your wallets</Text>
-    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={(t: string) => { setAmount(t); setQuote(null); }} keyboardType="decimal-pad" placeholder="0.00" />
+    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={(t: string) => { setAmount(t); setQuote(null); }} keyboardType="decimal-pad" />
     <Text style={S.lbl}>To</Text>
     <View style={S.chipRow}>{targets.map((t) => <TouchableOpacity key={t.currency} onPress={() => { setTo(t.currency); setQuote(null); }} style={[S.chip, to === t.currency && S.chipOn]}><Text style={[S.chipTxt, to === t.currency && S.white]}>{t.currency}</Text></TouchableOpacity>)}</View>
     {!quote ? <Btn title="Get quote" color={Colors.primary} disabled={!cents || busy} onPress={async () => {
@@ -258,7 +274,7 @@ function CashOut({ w, busy, run, onError }: { w: W; busy: boolean; run: any; onE
     </View>
     {mode === 'code' ? <>
       <Text style={S.lbl}>Agent code</Text>
-      <TextInput style={[S.input, S.code]} value={code} onChangeText={(t: string) => setCode(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor={Colors.textSecondary} />
+      <TextInput style={[S.input, S.code]} value={code} onChangeText={(t: string) => setCode(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} placeholderTextColor={Colors.textSecondary} />
       <Btn title="Continue" color={Colors.primary} disabled={code.length !== 6} onPress={() => findAgent(code)} />
     </> : null}
     <QrScanner what="agent" visible={mode === 'scan'} onClose={() => setMode('code')} onCode={async (payload) => {
@@ -274,7 +290,7 @@ function CashOut({ w, busy, run, onError }: { w: W; busy: boolean; run: any; onE
   return <>
     <Text style={S.h}>Cash out at an agent</Text>
     <Party kind="Agent" code={agent.code} name={agent.name} place={agent.location} onChange={reset} />
-    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" />
+    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" />
     <ChargeLine charge={charge} ccy={w.currency} />
     <Field label="PIN" value={pin} onChangeText={(t: string) => setPin(t.replace(/\D/g, ''))} keyboardType="number-pad" secureTextEntry maxLength={6} />
     <Btn title={`Cash out ${cents ? formatAmount(cents, w.currency) : ''}`} disabled={!cents || pin.length < 4 || busy} onPress={async () => {
@@ -289,11 +305,10 @@ function PayMerchant({ w, busy, run, onError }: { w: W; busy: boolean; run: any;
   const [m, setM] = useState<any>(null);
   const [mode, setMode] = useState<'scan' | 'code'>('code');
   const [amount, setAmount] = useState('');
-  const [note, setNote] = useState('');
   const [pin, setPin] = useState('');
   const cents = toMinor(amount);
   const charge = useCharge('MERCHANT_PAYMENT', w, cents);
-  const reset = () => { setCode(''); setM(null); setAmount(''); setNote(''); setPin(''); };
+  const reset = () => { setCode(''); setM(null); setAmount(''); setPin(''); };
   const find = async (c: string) => {
     onError('');
     try { const r = await walletApi.merchant(c); setM(r.data?.data); } catch (e) { onError(errMsg(e, 'No merchant with that code.')); }
@@ -312,7 +327,7 @@ function PayMerchant({ w, busy, run, onError }: { w: W; busy: boolean; run: any;
     </View>
     {mode === 'code' ? <>
       <Text style={S.lbl}>Merchant code</Text>
-      <TextInput style={[S.input, S.code]} value={code} onChangeText={(t: string) => setCode(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor={Colors.textSecondary} />
+      <TextInput style={[S.input, S.code]} value={code} onChangeText={(t: string) => setCode(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} placeholderTextColor={Colors.textSecondary} />
       <Btn title="Continue" color={Colors.primary} disabled={code.length !== 6} onPress={() => find(code)} />
     </> : null}
     <QrScanner visible={mode === 'scan'} onClose={() => setMode('code')} onCode={async (payload) => {
@@ -330,12 +345,11 @@ function PayMerchant({ w, busy, run, onError }: { w: W; busy: boolean; run: any;
     <Text style={S.h}>Pay a merchant</Text>
     <Party kind="Merchant" code={m.code} name={m.name} place={m.address} onChange={reset} />
     {!takes ? <Text style={S.errTxt}>{m.name} takes {m.currencies.join(', ')}. Choose that wallet above.</Text> : null}
-    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" />
+    <Field label={`Amount (${w.currency})`} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" />
     <ChargeLine charge={charge} ccy={w.currency} />
-    <Field label="Note (optional)" value={note} onChangeText={setNote} maxLength={80} />
     <Field label="PIN" value={pin} onChangeText={(t: string) => setPin(t.replace(/\D/g, ''))} keyboardType="number-pad" secureTextEntry maxLength={6} />
     <Btn title={`Pay ${cents ? formatAmount(cents, w.currency) : ''}`} disabled={!takes || !cents || pin.length < 4 || busy} onPress={async () => {
-      if (await run(() => walletApi.payMerchant(m.code, w.currency, cents, pin, note.trim() || null),
+      if (await run(() => walletApi.payMerchant(m.code, w.currency, cents, pin, null),
         (d: any) => `Paid ${formatAmount(cents, w.currency)} to ${d.merchantName || m.name}.`)) reset();
     }} />
   </>;
@@ -376,6 +390,10 @@ const S = themed(() => ({
   err: { backgroundColor: Colors.errorBg, borderRadius: 12, padding: 12, marginBottom: 12 },
   errTxt: { color: Colors.red, fontSize: 14 },
   ok: { backgroundColor: Colors.successBg, borderRadius: 12, padding: 12, marginBottom: 12 },
+  doneWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
+  doneIcon: { width: 92, height: 92, borderRadius: 46, backgroundColor: Colors.green, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
+  doneTitle: { fontSize: 24, fontFamily: 'Rubik_700Bold', color: Colors.textPrimary, marginBottom: 10 },
+  doneMsg: { fontSize: 15.5, fontFamily: 'Nunito_600SemiBold', color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
   okTxt: { color: Colors.green, fontSize: 14 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: Colors.borderLight },
   rowL: { fontSize: 14, color: Colors.textPrimary },

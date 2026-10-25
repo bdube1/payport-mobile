@@ -361,7 +361,7 @@ export default function DataScreen() {
                 <TextInput 
                   value={recipientPhone} 
                   onChangeText={setRecipientPhone} 
-                  placeholder="077 123 4567" 
+                  
                   placeholderTextColor={Colors.textSecondary} 
                   keyboardType="phone-pad" 
                   style={S.phoneIn} 

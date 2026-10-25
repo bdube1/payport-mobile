@@ -106,11 +106,11 @@ export default function HistoryScreen() {
                   <Text style={[S.txAmount, { color: Colors.primary }]}>{formatAmount(item.totalCents ?? item.amountCents, item.currency)}</Text>
                 </View>
                 <View style={S.cardRow}>
-                  <Text style={S.txDate}>{item.recipientIdentifier}  ·  {fmtDate(item.createdAt)}</Text>
+                  <Text style={S.txDate}>{item.toName || item.recipientIdentifier}  ·  {fmtDate(item.createdAt)}</Text>
                   <Text style={[S.txStatus, { color: sc }]}>{item.status.replace(/_/g,' ')}</Text>
                 </View>
                 {open === item.reference ? (
-                  <Details items={[['Reference', item.reference], ['What', item.productName], ['To', item.recipientIdentifier], ['Amount', formatAmount(item.totalCents ?? item.amountCents, item.currency)],
+                  <Details items={[['Reference', item.reference], ['Trxn Type', item.productName], ['To', item.toName || item.recipientIdentifier], ['Amount', formatAmount(item.totalCents ?? item.amountCents, item.currency)],
                     ['Paid with', METHOD[item.paymentMethodCode] || item.paymentMethodCode], ['Status', item.status.replace(/_/g, ' ')], ['Date', full(item.createdAt || item.initiatedAt)],
                     ['Token', item.voucherToken || item.token]]}>
                     <TouchableOpacity onPress={() => router.push(`/status/${item.reference}`)}><Text style={S.link}>Track this order ›</Text></TouchableOpacity>
@@ -169,11 +169,11 @@ function WalletHistory() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={S.txName}>{KIND[r.kind] || r.kind}</Text>
-                <Text style={S.txDate} numberOfLines={1}>{full(r.created_at)}{r.counterparty ? `  ·  ${r.counterparty}` : ''}</Text>
+                <Text style={S.txDate} numberOfLines={1}>{full(r.created_at)}{(r.to_name || r.counterparty) ? `  ·  ${r.to_name || r.counterparty}` : ''}</Text>
               </View>
               <Text style={[S.txAmount, { color: cr ? Colors.green : Colors.textPrimary }]}>{cr ? '+' : '−'}{formatAmount(r.amount_minor, r.currency)}</Text>
             </View>
-            {open === id ? <Details items={[['Type', KIND[r.kind] || r.kind], ['Amount', `${cr ? '+' : '−'}${formatAmount(r.amount_minor, r.currency)}`], ['With', r.counterparty],
+            {open === id ? <Details items={[['Trxn Type', KIND[r.kind] || r.kind], ['Amount', `${cr ? '+' : '−'}${formatAmount(r.amount_minor, r.currency)}`], ['With', r.to_name || r.counterparty],
               ['Reference', r.reference || r.op_ref], ['Wallet', `${r.currency} · ${r.walletRef}`], ['Date', full(r.created_at)]]} /> : null}
           </TouchableOpacity>
         );

@@ -33,7 +33,7 @@ export default function TrackOrderScreen() {
         {error !== '' && <View style={S.err}><Text style={S.errTxt}>{error}</Text></View>}
         <Text style={S.lbl}>Transaction Reference</Text>
         <TextInput value={ref} onChangeText={v => { setRef(v); setError(''); }}
-          placeholder="PP-MOB-YYYYMMDD-XXXXXX"
+         
           placeholderTextColor={Colors.textSecondary}
           autoCapitalize="characters" style={S.input}
           returnKeyType="search" onSubmitEditing={handleTrack} />
