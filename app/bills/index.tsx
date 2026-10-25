@@ -164,7 +164,7 @@ export default function BillsScreen() {
             <Text style={S.lbl}>{biller.field}</Text>
             <View style={S.lookupRow}>
               <TextInput value={accountRef} onChangeText={v => { setAccountRef(v); setCustomerInfo(null); }}
-                placeholder={`Enter ${biller.field.toLowerCase()}`} placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={Colors.textSecondary}
                 keyboardType={biller.code === 'ZESA' ? 'numeric' : 'default'}
                 style={[S.lookupInput, customerInfo && { borderColor: Colors.green }]} />
               <TouchableOpacity onPress={lookupCustomer} disabled={infoLoading || !accountRef.trim()}
@@ -187,7 +187,7 @@ export default function BillsScreen() {
 
             {/* 4. Amount */}
             <Text style={S.lbl}>Amount ({currency})</Text>
-            <TextInput value={amount} onChangeText={setAmount} placeholder="Enter amount e.g. 20.00"
+            <TextInput value={amount} onChangeText={setAmount} placeholder="Enter amount"
               placeholderTextColor={Colors.textSecondary} keyboardType="decimal-pad" style={S.input} />
 
             {/* 5. Payment method */}

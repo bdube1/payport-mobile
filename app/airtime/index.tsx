@@ -139,7 +139,7 @@ export default function AirtimeScreen() {
           <Text style={S.lbl}>Recipient Number</Text>
           <View style={[S.phoneRow, networkDetected && { borderColor: Colors.green }]}>
             <View style={S.pfx}><Text style={S.pfxTxt}>+263</Text></View>
-            <TextInput value={recipientPhone} onChangeText={setRecipientPhone} placeholder="077 123 4567" placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} autoFocus={!prefillPhone} />
+            <TextInput value={recipientPhone} onChangeText={setRecipientPhone} placeholderTextColor={Colors.textSecondary} keyboardType="phone-pad" style={S.phoneIn} autoFocus={!prefillPhone} />
             {networkLoading && <ActivityIndicator color={Colors.primary} size="small" style={{ marginRight: 12 }} />}
           </View>
           {networkLoading && <Text style={S.detecting}>Detecting network...</Text>}
@@ -147,7 +147,7 @@ export default function AirtimeScreen() {
           {networkDetected && <>
             {currencies.length > 0 && <><Text style={S.lbl}>Currency</Text><View style={S.chipRow}>{currencies.map(c => <TouchableOpacity key={c} onPress={() => setCurrency(c)} style={[S.chip, currency === c && S.chipActive]}><Text style={[S.chipTxt, currency === c && S.chipActiveTxt]}>{c}</Text></TouchableOpacity>)}</View></>}
             <Text style={S.lbl}>Amount{currency ? ` (${currency})` : ''}</Text>
-            <TextInput value={customAmt} onChangeText={setCustomAmt} placeholder="e.g. 5.00" placeholderTextColor={Colors.textSecondary} keyboardType="decimal-pad" style={S.input} />
+            <TextInput value={customAmt} onChangeText={setCustomAmt} placeholderTextColor={Colors.textSecondary} keyboardType="decimal-pad" style={S.input} />
             {paymentMethods.length > 0 && <><Text style={S.lbl}>Payment Method</Text><View style={S.chipRow}>{paymentMethods.map((m: any) => <TouchableOpacity key={m.code} onPress={() => setPaymentMethod(m.code)} style={[S.chip, paymentMethod === m.code && S.chipActive]}><Text style={[S.chipTxt, paymentMethod === m.code && S.chipActiveTxt]}>{methodLabel(m)}</Text></TouchableOpacity>)}</View></>}
             {paymentMethod === 'WALLET' && <><Text style={S.lbl}>Wallet PIN</Text><TextInput value={walletPin} onChangeText={t => setWalletPin(t.replace(/\D/g, ''))} placeholder="Your PayPort PIN" placeholderTextColor={Colors.textSecondary} keyboardType="number-pad" secureTextEntry maxLength={6} style={S.input} /></>}
             {paymentMethod !== 'WALLET' && <><Text style={S.lbl}>Payment Wallet Number</Text>

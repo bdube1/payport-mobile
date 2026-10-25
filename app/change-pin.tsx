@@ -39,19 +39,19 @@ export default function ChangePinScreen() {
         <Text style={S.label}>Current PIN</Text>
         <TextInput
           style={S.input} value={currentPin} onChangeText={t => setCurrentPin(t.replace(/\D/g, '').slice(0, 4))}
-          keyboardType="number-pad" secureTextEntry maxLength={4} placeholder="••••" placeholderTextColor={Colors.textSecondary}
+          keyboardType="number-pad" secureTextEntry maxLength={4} placeholderTextColor={Colors.textSecondary}
         />
 
         <Text style={S.label}>New PIN</Text>
         <TextInput
           style={S.input} value={newPin} onChangeText={t => setNewPin(t.replace(/\D/g, '').slice(0, 4))}
-          keyboardType="number-pad" secureTextEntry maxLength={4} placeholder="••••" placeholderTextColor={Colors.textSecondary}
+          keyboardType="number-pad" secureTextEntry maxLength={4} placeholderTextColor={Colors.textSecondary}
         />
 
         <Text style={S.label}>Confirm New PIN</Text>
         <TextInput
           style={S.input} value={confirmPin} onChangeText={t => setConfirmPin(t.replace(/\D/g, '').slice(0, 4))}
-          keyboardType="number-pad" secureTextEntry maxLength={4} placeholder="••••" placeholderTextColor={Colors.textSecondary}
+          keyboardType="number-pad" secureTextEntry maxLength={4} placeholderTextColor={Colors.textSecondary}
         />
 
         <TouchableOpacity style={[S.btn, loading && { opacity: 0.7 }]} onPress={handleSubmit} disabled={loading}>

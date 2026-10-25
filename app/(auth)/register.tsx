@@ -58,19 +58,19 @@ export default function RegisterScreen() {
             {/* Full name */}
             <Text style={S.lbl}>Full Name</Text>
             <TextInput value={fullName} onChangeText={setFullName}
-              placeholder="e.g. Tinashe Moyo" placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={Colors.textSecondary}
               style={S.input} returnKeyType="next" />
 
             {/* Mobile */}
             <Text style={S.lbl}>Mobile Number</Text>
             <TextInput value={phone} onChangeText={setPhone}
-              placeholder="e.g. 0771234567" placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={Colors.textSecondary}
               keyboardType="phone-pad" style={S.input} returnKeyType="next" />
 
             {/* National ID */}
             <Text style={S.lbl}>ID Number</Text>
             <TextInput value={idNumber} onChangeText={(v) => setIdNumber(v.toUpperCase())}
-              placeholder="e.g. 63-123456A42" placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={Colors.textSecondary}
               autoCapitalize="characters" autoCorrect={false} style={S.input} returnKeyType="next" />
 
             {/* PIN */}

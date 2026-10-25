@@ -17,7 +17,7 @@ interface PhoneInputProps {
 }
 
 export default function PhoneInput({
-  label, value, onChange, placeholder = '07X XXX XXXX',
+  label, value, onChange, placeholder,
   hint, locked = false, valid = false, invalid = false, style,
 }: PhoneInputProps) {
   const borderColor = invalid
