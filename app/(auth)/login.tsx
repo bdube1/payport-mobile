@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Platform, ScrollView, Alert, Image, ActivityIndicator, ImageBackground,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -24,7 +24,8 @@ export default function LoginScreen() {
   const [phone,   setPhone]   = useState('');
   const [pin,     setPin]     = useState('');
   const [showPin, setShowPin] = useState(false);
-  const [error,   setError]   = useState('');
+  const { timeout } = useLocalSearchParams<{ timeout?: string }>();
+  const [error,   setError]   = useState(timeout ? 'Your session timed out. Please sign in again.' : '');
   const [bioType, setBioType] = useState('Biometrics');
 
   // Three states: checking (deciding which screen to show), biometric (the

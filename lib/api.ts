@@ -88,7 +88,9 @@ api.interceptors.response.use(
       try {
         await clearSession();
       } catch {}
-      router.replace('/(auth)/login');
+      // The app's signed-in state goes too, so no screen keeps showing a session that has ended.
+      try { require('../store/authStore').useAuthStore.setState({ user: null, token: null }); } catch {}
+      router.replace({ pathname: '/(auth)/login', params: { timeout: '1' } } as any);
       // Reset the guard after navigation has had a chance to settle, so a
       // genuinely new login later isn't blocked by a stale flag.
       setTimeout(() => { isRedirectingToLogin = false; }, 1000);

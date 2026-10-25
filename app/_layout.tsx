@@ -22,6 +22,7 @@ import { listenForNotificationTaps } from '../lib/push';
 import { Colors, isDark, onThemeChange, themeVersion } from '../constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TermsGate from '../components/TermsGate';
+import { useIdleLogout } from '../lib/idle';
 
 const TERMS_KEY = 'pp_terms_accepted';
 
@@ -29,6 +30,8 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const hydrate = useAuthStore((s) => s.hydrate);
+  const signedIn = useAuthStore((s) => !!s.user);
+  const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
   // A theme switch redraws every screen with the new palette; the session is kept and Profile is shown again.
   const [theme, setTheme] = useState(themeVersion());
@@ -66,6 +69,11 @@ export default function RootLayout() {
 
   useEffect(() => listenForNotificationTaps(), []);
 
+  // Signed out after the mobile time-out without activity (set in ops) and taken to the login screen.
+  const touched = useIdleLogout(signedIn, () => {
+    logout().catch(() => {}).finally(() => router.replace({ pathname: '/(auth)/login', params: { timeout: '1' } } as any));
+  });
+
   useEffect(() => {
     hydrate();
   }, []);
@@ -92,7 +100,8 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView key={`theme-${theme}`} style={{ flex: 1, backgroundColor: Colors.background }}>
+    <GestureHandlerRootView key={`theme-${theme}`} style={{ flex: 1, backgroundColor: Colors.background }}
+      onStartShouldSetResponderCapture={() => { touched(); return false; }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
