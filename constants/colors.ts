@@ -1,10 +1,10 @@
 // ============================================================
 // Payport Colors — the brand system used on payport.africa and the web apps,
 // in a light and a dark palette. The palette is chosen when the app starts:
-// the user's choice (Profile > Appearance), else the phone's setting.
+// the user's choice (Profile > Appearance), else light (a new install always starts in light).
 // Changing it restarts the app's JavaScript so every screen picks it up.
 // ============================================================
-import { Appearance, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 export type ThemeMode = 'light' | 'dark';
@@ -19,7 +19,7 @@ function savedMode(): ThemeMode | null {
     }
 }
 
-export let themeMode: ThemeMode = savedMode() ?? (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light');
+export let themeMode: ThemeMode = savedMode() ?? 'light';
 export let isDark = themeMode === 'dark';
 
 const brand = {
@@ -96,25 +96,26 @@ const dark: typeof light = {
 export const Colors: typeof light = { ...(isDark ? dark : light) };
 
 let version = 0;
-const listeners = new Set<(v: number) => void>();
+const listeners = new Set<(v: number, quiet?: boolean) => void>();
 
 /** Current theme version (changes on every switch). */
 export const themeVersion = () => version;
 
-export function onThemeChange(fn: (v: number) => void) {
+export function onThemeChange(fn: (v: number, quiet?: boolean) => void) {
     listeners.add(fn);
     return () => { listeners.delete(fn); };
 }
 
-/** Saves the choice and switches the palette at once; the session and the screen stay as they are. */
-export async function setThemeMode(mode: ThemeMode) {
+/** Saves the choice and switches the palette at once; the session and the screen stay as they are.
+ *  quiet: a reset on a new install (no return to Profile). */
+export async function setThemeMode(mode: ThemeMode, quiet = false) {
     try { await SecureStore.setItemAsync(THEME_KEY, mode); } catch { /* not saved */ }
     if (mode === themeMode) return;
     themeMode = mode;
     isDark = mode === 'dark';
     Object.assign(Colors, isDark ? dark : light);
     version += 1;
-    listeners.forEach((fn) => fn(version));
+    listeners.forEach((fn) => fn(version, quiet));
 }
 
 /**

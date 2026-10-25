@@ -3,7 +3,7 @@ import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import { Colors, themed } from '../../constants/colors';
 
-const SECTIONS = [
+export const SECTIONS = [
   {
     title: 'Services',
     body: [

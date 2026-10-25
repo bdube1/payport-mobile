@@ -149,7 +149,7 @@ export function paymentError(err: any, fallback = 'Payment failed. Please try ag
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 export const authApi = {
-  register: (data: { fullName: string; phone: string; pin: string }) =>
+  register: (data: { fullName: string; phone: string; pin: string; idNumber?: string }) =>
     api.post('/api/v1/auth/register', data),
   login: (data: { phone: string; pin: string; deviceId?: string }) =>
     api.post('/api/v1/auth/login', data),
