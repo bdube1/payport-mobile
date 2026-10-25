@@ -17,6 +17,7 @@ export default function RegisterScreen() {
 
   const [fullName,   setFullName]   = useState('');
   const [phone,      setPhone]      = useState('');
+  const [idNumber,   setIdNumber]   = useState('');
   const [pin,        setPin]        = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [showPin,    setShowPin]    = useState(false);
@@ -27,10 +28,12 @@ export default function RegisterScreen() {
     if (!fullName.trim() || fullName.trim().length < 2) { setError('Enter your full name'); return; }
     const norm = normalizePhone(phone);
     if (!/^\+263\d{9}$/.test(norm)) { setError('Enter a valid Zimbabwe number e.g. 0771234567'); return; }
+    const id = idNumber.replace(/\s/g, '').toUpperCase();
+    if (!/^[A-Z0-9][A-Z0-9/-]{3,39}$/.test(id)) { setError('Enter your national ID number e.g. 63-123456A42'); return; }
     if (!/^\d{4}$/.test(pin))        { setError('PIN must be exactly 4 digits'); return; }
     if (pin !== confirmPin)           { setError('PINs do not match'); return; }
 
-    const result = await register(fullName.trim(), norm, pin);
+    const result = await register(fullName.trim(), norm, pin, id);
     if (result.success) {
       router.replace('/(tabs)');
     } else {
@@ -63,6 +66,12 @@ export default function RegisterScreen() {
             <TextInput value={phone} onChangeText={setPhone}
               placeholder="e.g. 0771234567" placeholderTextColor={Colors.textSecondary}
               keyboardType="phone-pad" style={S.input} returnKeyType="next" />
+
+            {/* National ID */}
+            <Text style={S.lbl}>ID Number</Text>
+            <TextInput value={idNumber} onChangeText={(v) => setIdNumber(v.toUpperCase())}
+              placeholder="e.g. 63-123456A42" placeholderTextColor={Colors.textSecondary}
+              autoCapitalize="characters" autoCorrect={false} style={S.input} returnKeyType="next" />
 
             {/* PIN */}
             <Text style={S.lbl}>4-Digit PIN</Text>

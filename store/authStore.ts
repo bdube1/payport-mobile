@@ -3,6 +3,8 @@ import { authApi, normalizePhone } from '../lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { saveSession, clearSession, getUser, getToken, getDeviceId, setBiometricEnabled, PPUser } from '../lib/auth';
 
+import { setThemeMode } from '../constants/colors';
+
 const INSTALL_KEY = 'pp_installed';
 import { registerForPush, unregisterPush } from '../lib/push';
 
@@ -14,7 +16,7 @@ interface AuthState {
 
   hydrate: () => Promise<void>;
   login: (phone: string, pin: string) => Promise<{ success: boolean; message?: string }>;
-  register: (fullName: string, phone: string, pin: string) => Promise<{ success: boolean; message?: string }>;
+  register: (fullName: string, phone: string, pin: string, idNumber?: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -31,6 +33,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!(await AsyncStorage.getItem(INSTALL_KEY))) {
         await clearSession().catch(() => {});
         await setBiometricEnabled(false).catch(() => {});
+        // The keychain can also keep an old theme choice; a new install starts in light.
+        await setThemeMode('light', true).catch(() => {});
         await AsyncStorage.setItem(INSTALL_KEY, String(Date.now()));
         set({ user: null, token: null, hydrated: true });
         return;
@@ -69,10 +73,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  register: async (fullName, phone, pin) => {
+  register: async (fullName, phone, pin, idNumber) => {
     set({ loading: true });
     try {
-      const res = await authApi.register({ fullName, phone: normalizePhone(phone), pin });
+      const res = await authApi.register({ fullName, phone: normalizePhone(phone), pin, idNumber });
       const outer = res.data?.data || res.data || {};
       const token = outer.token || outer.accessToken || '';
       const u = outer.user || outer;

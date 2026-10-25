@@ -20,6 +20,10 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { listenForNotificationTaps } from '../lib/push';
 import { Colors, isDark, onThemeChange, themeVersion } from '../constants/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import TermsGate from '../components/TermsGate';
+
+const TERMS_KEY = 'pp_terms_accepted';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -29,7 +33,16 @@ export default function RootLayout() {
   // A theme switch redraws every screen with the new palette; the session is kept and Profile is shown again.
   const [theme, setTheme] = useState(themeVersion());
   const switched = useRef(false);
-  useEffect(() => onThemeChange((v) => { switched.current = true; setTheme(v); }), []);
+  useEffect(() => onThemeChange((v, quiet) => { switched.current = !quiet; setTheme(v); }), []);
+  // Terms of Service and Privacy Policy must be accepted once after installing, before anything else.
+  const [termsOk, setTermsOk] = useState<boolean | null>(null);
+  useEffect(() => {
+    AsyncStorage.getItem(TERMS_KEY).then((v) => setTermsOk(!!v)).catch(() => setTermsOk(false));
+  }, []);
+  const acceptTerms = () => {
+    AsyncStorage.setItem(TERMS_KEY, new Date().toISOString()).catch(() => {});
+    setTermsOk(true);
+  };
   useEffect(() => {
     if (!switched.current) return;
     switched.current = false;
@@ -67,7 +80,16 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || termsOk === null) return null;
+
+  if (!termsOk) {
+    return (
+      <GestureHandlerRootView key={`theme-${theme}`} style={{ flex: 1, backgroundColor: Colors.background }}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <TermsGate onAccept={acceptTerms} />
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView key={`theme-${theme}`} style={{ flex: 1, backgroundColor: Colors.background }}>
