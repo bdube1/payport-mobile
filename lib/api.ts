@@ -237,6 +237,20 @@ export async function liveCurrencies(): Promise<string[]> {
   } catch { return ['USD', 'ZWG']; }
 }
 
+// ── PayPort Store (the same stores and orders as the website, WhatsApp and USSD) ──
+export const storeApi = {
+  stores: (type?: string, q?: string) => api.get('/api/v1/store/stores', { params: { type: type || undefined, q: q || undefined } }),
+  store: (slug: string, c?: string, q?: string) => api.get(`/api/v1/store/stores/${encodeURIComponent(slug)}`, { params: { c: c || undefined, q: q || undefined } }),
+  slots: (slug: string, items: { productId: number; quantity: number }[]) => api.post(`/api/v1/store/stores/${encodeURIComponent(slug)}/slots`, { items }),
+  quote: (order: Record<string, any>) => api.post('/api/v1/store/quote', order),
+  order: (order: Record<string, any>) => api.post('/api/v1/store/orders', order),
+  orders: () => api.get('/api/v1/store/orders'),
+  get: (ref: string) => api.get(`/api/v1/store/orders/${encodeURIComponent(ref)}`),
+  /** A store order paid with mobile money on its checkout (card opens the checkout page instead). */
+  payCheckout: (sessionId: number, customerPhone: string, paymentMethodCode: string) =>
+    api.post(`/api/v1/checkout/${sessionId}/pay`, { customerPhone, paymentMethodCode }),
+};
+
 // ── Wallet ──────────────────────────────────────────────────────────────
 export const walletApi = {
   list: () => api.get('/api/v1/wallet'),
@@ -245,6 +259,7 @@ export const walletApi = {
   transfer: (to: string, currency: string, amountMinor: number, pin: string, clientRef?: string) =>
     api.post('/api/v1/wallet/transfers', { to, currency, amountMinor, pin, clientRef }),
   pay: (reference: string, pin: string) => api.post('/api/v1/wallet/pay', { reference, pin }),
+  payCheckout: (sessionId: number, pin: string) => api.post('/api/v1/wallet/pay-checkout', { sessionId, pin }),
   quote: (from: string, to: string, amountMinor: number) => api.post('/api/v1/wallet/fx/quotes', { from, to, amountMinor }),
   convert: (quoteRef: string, pin: string) => api.post('/api/v1/wallet/fx/conversions', { quoteRef, pin }),
   agent: (code: string) => api.get(`/api/v1/wallet/agents/${encodeURIComponent(code)}`),
