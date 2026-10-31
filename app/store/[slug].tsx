@@ -84,6 +84,8 @@ export default function StorePage() {
   const [problem, setProblem] = useState('');
   const [busy, setBusy] = useState(false);
   const [pin, setPin] = useState(false);
+  const [usePoints, setUsePoints] = useState(false);
+  const [offers, setOffers] = useState(false);
   const key = useRef(newIdempotencyKey().replace(/-/g, ''));
 
   const load = (c = col) => storeApi.store(slug, c).then(r => setSt(r.data?.data || r.data)).catch(e => setError(e?.response?.data?.message || 'This store could not be opened.'));
@@ -103,7 +105,8 @@ export default function StorePage() {
 
   const add = (id: number, d: number) => setCart(c => ({ ...c, [id]: Math.max(0, Math.min(20, (c[id] || 0) + d)) }));
   const order = () => ({ store: slug, items: lines, method: servicesOnly ? undefined : how, zone: zone || undefined, address: address || undefined,
-    slot: slot || undefined, code: code || undefined, pay: pay === 'WALLET' ? undefined : pay || undefined, key: key.current });
+    slot: slot || undefined, code: code || undefined, pay: pay === 'WALLET' ? undefined : pay || undefined, key: key.current,
+    points: usePoints || undefined, offers: offers || undefined, phone: user?.phone });
 
   const checkout = async () => {
     if (!user) { router.push('/(auth)/login' as any); return; }
@@ -117,7 +120,7 @@ export default function StorePage() {
     if (!open) return;
     storeApi.quote(order()).then(r => { setQuote(r.data?.data || r.data); setProblem(''); })
       .catch(e => { setQuote(null); setProblem(e?.response?.data?.message || 'Check your order.'); });
-  }, [open, how, zone, code, slot, pay]);
+  }, [open, how, zone, code, slot, pay, usePoints]);
 
   const place = async (walletPin?: string) => {
     setBusy(true); setProblem('');
@@ -218,8 +221,19 @@ export default function StorePage() {
                 <Text style={S.lbl}>{METHOD_NAMES[pay]} number</Text>
                 <TextInput style={S.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="07..." placeholderTextColor={Colors.textSecondary} />
               </>}
+              {quote?.pointsUsable > 0 && (
+                <TouchableOpacity style={[S.chip, usePoints && S.chipOn, { marginTop: 14, alignSelf: 'flex-start' }]} onPress={() => setUsePoints(!usePoints)}>
+                  <Text style={[S.chipTxt, usePoints && { color: '#fff' }]}>{usePoints ? '✓ ' : ''}Use {quote.pointsUsable} of your {quote.pointsBalance} points</Text>
+                </TouchableOpacity>
+              )}
+              {quote?.askOffers && (
+                <TouchableOpacity style={[S.chip, offers && S.chipOn, { marginTop: 10, alignSelf: 'flex-start' }]} onPress={() => setOffers(!offers)}>
+                  <Text style={[S.chipTxt, offers && { color: '#fff' }]}>{offers ? '✓ ' : ''}Send me offers from {st.name} by SMS</Text>
+                </TouchableOpacity>
+              )}
               {quote && <View style={S.sum}>
                 {(quote.lines || []).map((l: any, n: number) => <View key={n} style={S.sumRow}><Text style={S.sumLbl}>{l.quantity} x {l.name}</Text><Text style={S.sumVal}>{l.line}</Text></View>)}
+                {quote.pointsUsedMinor > 0 && <View style={S.sumRow}><Text style={S.sumLbl}>Points</Text><Text style={S.sumVal}>−{formatAmount(quote.pointsUsedMinor, quote.currency)}</Text></View>}
                 {quote.discountMinor > 0 && <View style={S.sumRow}><Text style={S.sumLbl}>Discount</Text><Text style={S.sumVal}>−{formatAmount(quote.discountMinor, quote.currency)}</Text></View>}
                 {quote.deliveryFeeMinor > 0 && <View style={S.sumRow}><Text style={S.sumLbl}>Delivery</Text><Text style={S.sumVal}>{formatAmount(quote.deliveryFeeMinor, quote.currency)}</Text></View>}
                 <View style={S.sumRow}><Text style={[S.sumVal, { fontSize: 16 }]}>Total</Text><Text style={[S.sumVal, { fontSize: 18, color: Colors.primary }]}>{quote.total}</Text></View>
