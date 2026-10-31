@@ -15,6 +15,7 @@ const SERVICES = [
     { icon: 'wifi-outline' as const,           title: 'Data',          subtitle: 'Econet, NetOne, Telecel', route: '/data' },
     { icon: 'receipt-outline' as const,        title: 'Bills',         subtitle: 'ZESA, ZOL & more',   route: '/bills' },
     { icon: 'cube-outline' as const,           title: 'Track Order',   subtitle: 'Check status',       route: '/track' },
+    { icon: 'bag-handle-outline' as const,     title: 'Shop',          subtitle: 'Local stores',       route: '/store' },
 ];
 
 const WALLET_SERVICES = [
@@ -27,6 +28,7 @@ const WALLET_SERVICES = [
     { icon: 'wifi-outline' as const,            title: 'Data',         route: '/data' },
     { icon: 'receipt-outline' as const,         title: 'Bills',        route: '/bills' },
     { icon: 'card-outline' as const,            title: 'Cards',        route: '/cards' },
+    { icon: 'bag-handle-outline' as const,      title: 'Shop',         route: '/store' },
 ];
 
 type W = { walletRef: string; currency: string; balanceMinor: number; status: string };
