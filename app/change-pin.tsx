@@ -5,9 +5,11 @@ import GradientScreen from '../components/ui/GradientScreen';
 import AppBar from '../components/ui/AppBar';
 import { Colors, themed } from '../constants/colors';
 import { authApi } from '../lib/api';
+import { useAuthStore } from '../store/authStore';
 
 export default function ChangePinScreen() {
   const router = useRouter();
+  const logout = useAuthStore((st) => st.logout);
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -22,9 +24,10 @@ export default function ChangePinScreen() {
     setLoading(true);
     try {
       await authApi.changePin(currentPin, newPin);
-      Alert.alert('PIN Changed', 'Your PIN has been updated successfully.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      // Signed out after a PIN change: sign in again with the new PIN.
+      await logout().catch(() => {});
+      router.replace('/(auth)/login' as any);
+      Alert.alert('PIN changed', 'Sign in with your new PIN.');
     } catch (e: any) {
       Alert.alert('Could not change PIN', e?.response?.data?.message || 'Please check your current PIN and try again.');
     } finally {

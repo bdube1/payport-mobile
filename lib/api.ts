@@ -249,6 +249,11 @@ export const storeApi = {
   /** A store order paid with mobile money on its checkout (card opens the checkout page instead). */
   payCheckout: (sessionId: number, customerPhone: string, paymentMethodCode: string) =>
     api.post(`/api/v1/checkout/${sessionId}/pay`, { customerPhone, paymentMethodCode }),
+  /** Chat with the store's seller (the same conversation as on the website). */
+  chat: (slug: string, after = 0) => api.get(`/api/v1/store/stores/${encodeURIComponent(slug)}/chat`, { params: { after } }),
+  say: (slug: string, text: string) => api.post(`/api/v1/store/stores/${encodeURIComponent(slug)}/chat`, { text }),
+  reportReasons: () => api.get('/api/v1/store/report-reasons'),
+  report: (slug: string, reason: string, details?: string) => api.post(`/api/v1/store/stores/${encodeURIComponent(slug)}/report`, { reason, details }),
 };
 
 // ── Wallet ──────────────────────────────────────────────────────────────
