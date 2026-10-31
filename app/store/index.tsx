@@ -7,7 +7,7 @@ import AppBar from '../../components/ui/AppBar';
 import { Colors, themed } from '../../constants/colors';
 import { storeApi } from '../../lib/api';
 
-// The colour of each kind of store (the same as the PayPort Store website).
+// The colour of each kind of store (the same as the Payport Store website).
 export const TYPE_COLOURS: Record<string, string> = {
   FOOD: '#F07A45', CLOTHING: '#E46FA2', DRINKS: '#2AA3AE', SERVICES: '#2A86CC', BEAUTY: '#A16EE8',
   ELECTRONICS: '#6C7FE8', HOME: '#45B97A', CRAFTS: '#F7B44C', SHOP: '#4C9AD6', OTHER: '#4C9AD6',
@@ -58,7 +58,7 @@ export default function StoreDirectory() {
   const stores: any[] = data?.stores || [];
   return (
     <GradientScreen>
-      <AppBar title="PayPort Store" showBack rightElement={
+      <AppBar title="Payport Store" showBack rightElement={
         <TouchableOpacity onPress={() => router.push('/store/orders' as any)}><Ionicons name="receipt-outline" size={22} color="#fff" /></TouchableOpacity>} />
       <ScrollView contentContainerStyle={S.body} keyboardShouldPersistTaps="handled">
         <View style={S.search}>

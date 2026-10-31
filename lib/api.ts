@@ -220,14 +220,14 @@ export async function startPayment(
   return paid.data?.data || paid.data;
 }
 
-/** The PayPort wallet is offered only to a signed-in customer. */
+/** The Payport wallet is offered only to a signed-in customer. */
 export function visibleMethods<T extends { code: string }>(methods: T[], signedIn: boolean): T[] {
   if (!signedIn) return methods.filter(m => m.code !== 'WALLET');
-  // A signed-in customer can always pay from the PayPort wallet, and it is the first option.
-  return [{ code: 'WALLET', name: 'PayPort Wallet', isActive: true, displayOrder: -1000 } as any as T, ...methods.filter(m => m.code !== 'WALLET')];
+  // A signed-in customer can always pay from the Payport wallet, and it is the first option.
+  return [{ code: 'WALLET', name: 'Payport Wallet', isActive: true, displayOrder: -1000 } as any as T, ...methods.filter(m => m.code !== 'WALLET')];
 }
 
-// Countries and currencies PayPort serves (public).
+// Countries and currencies Payport serves (public).
 export async function liveCurrencies(): Promise<string[]> {
   try {
     const r = await api.get('/api/v1/markets');
@@ -237,7 +237,7 @@ export async function liveCurrencies(): Promise<string[]> {
   } catch { return ['USD', 'ZWG']; }
 }
 
-// ── PayPort Store (the same stores and orders as the website, WhatsApp and USSD) ──
+// ── Payport Store (the same stores and orders as the website, WhatsApp and USSD) ──
 export const storeApi = {
   stores: (type?: string, q?: string) => api.get('/api/v1/store/stores', { params: { type: type || undefined, q: q || undefined } }),
   store: (slug: string, c?: string, q?: string) => api.get(`/api/v1/store/stores/${encodeURIComponent(slug)}`, { params: { c: c || undefined, q: q || undefined } }),

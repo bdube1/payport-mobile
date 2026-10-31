@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, themed } from '../../constants/colors';
 
-/** A PayPort QR: PAYPORT-QR:<token> (current QRs), or an older QR / text holding the six-digit code. */
+/** A Payport QR: PAYPORT-QR:<token> (current QRs), or an older QR / text holding the six-digit code. */
 export function isPayportQr(data: string): boolean {
   const s = String(data || '').trim();
   return /^PAYPORT-QR:[A-Z]{16}$/i.test(s) || /([1-9]\d{5})(?!.*\d)/.test(s);
@@ -33,7 +33,7 @@ export default function QrScanner({ visible, onCode, onClose, what = 'merchant' 
         )}
         <View style={S.frameWrap} pointerEvents="none"><View style={S.frame} /></View>
         <View style={S.bottom}>
-          <Text style={S.msg}>{bad ? 'That is not a PayPort QR code.' : `Point the camera at the ${what} QR code`}</Text>
+          <Text style={S.msg}>{bad ? 'That is not a Payport QR code.' : `Point the camera at the ${what} QR code`}</Text>
           <TouchableOpacity onPress={onClose} style={[S.btn, { backgroundColor: 'rgba(255,255,255,0.15)' }]}><Text style={S.btnTxt}>Cancel</Text></TouchableOpacity>
         </View>
       </View>

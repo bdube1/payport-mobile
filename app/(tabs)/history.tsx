@@ -19,7 +19,7 @@ function fmtDate(val: any) {
 const STATUS_COLOR: Record<string,string> = { COMPLETED: Colors.green, PAYMENT_PENDING: Colors.primary, PAYMENT_FAILED: Colors.red, FULFILMENT_FAILED: Colors.red, FULFILMENT_PENDING: Colors.orange, FULFILMENT_RETRY: Colors.orange, MANUAL_FULFILMENT: Colors.orange, PAYMENT_TIMEOUT: Colors.textSecondary, REFUNDED: Colors.primary, REFUND_PENDING: Colors.primary };
 
 const KIND: Record<string, string> = { TOPUP: 'Top-up', PAYMENT: 'Payment', P2P_OUT: 'Sent', P2P_IN: 'Received', CASH_IN: 'Cash in', CASH_OUT: 'Cash out', FX_OUT: 'Converted out', FX_IN: 'Converted in', REFUND: 'Refund' };
-const METHOD: Record<string, string> = { WALLET: 'PayPort Wallet', ECOCASH: 'EcoCash', ONEMONEY: 'OneMoney', OMARI: "O'mari", INNBUCKS: 'InnBucks', ZIMSWITCH: 'Card (ZimSwitch)' };
+const METHOD: Record<string, string> = { WALLET: 'Payport Wallet', ECOCASH: 'EcoCash', ONEMONEY: 'OneMoney', OMARI: "O'mari", INNBUCKS: 'InnBucks', ZIMSWITCH: 'Card (ZimSwitch)' };
 const full = (v: any) => {
   if (!v) return '';
   try {
