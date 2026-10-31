@@ -78,7 +78,7 @@ function RegisteredHome() {
                             <TouchableOpacity style={styles.wcard} onPress={() => enabled && router.push('/wallet?a=topup' as any)}>
                                 <View style={styles.wtop}>
                                     <View style={styles.wicon}><Ionicons name="wallet-outline" size={22} color="#0E86C2" /></View>
-                                    <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.wlabel}>PayPort Wallet</Text></View>
+                                    <View style={{ flex: 1, minWidth: 0 }}><Text style={styles.wlabel}>Payport Wallet</Text></View>
                                 </View>
                                 <Text style={[styles.wbal, { fontSize: 18 }]}>{enabled ? 'Open your wallet' : 'Coming soon'}</Text>
                             </TouchableOpacity>

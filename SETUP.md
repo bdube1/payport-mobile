@@ -235,6 +235,6 @@ Example: `EAS_PROJECT_ID=xxxxxxxx-xxxx-... eas build -p android --profile previe
 
 ## Wallet
 
-The Wallet tab appears for signed-in customers. It shows "not available yet" until PayPort switches the
+The Wallet tab appears for signed-in customers. It shows "not available yet" until Payport switches the
 WALLETS product line on in the ops console (licence recorded, then switched on). Paying with the wallet
 asks for the customer's PIN, which is sent only to the wallet endpoints.

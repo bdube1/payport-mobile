@@ -34,7 +34,7 @@ export function useWalletBalances(): Record<string, number> {
   return b;
 }
 
-/** The option's name ("PayPort Wallet" for the wallet; balances are shown only on the home screen). */
+/** The option's name ("Payport Wallet" for the wallet; balances are shown only on the home screen). */
 export function methodLabel(m: { code: string; name: string }) {
-  return m.code === 'WALLET' ? 'PayPort Wallet' : m.name;
+  return m.code === 'WALLET' ? 'Payport Wallet' : m.name;
 }

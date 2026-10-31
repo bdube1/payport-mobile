@@ -86,11 +86,11 @@ export default function WalletScreen() {
       <AppBar title={ACTIONS.find(([k]) => k === tab)?.[1] || 'Wallet'} showBack />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={S.body} refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}>
         {loading ? <ActivityIndicator color={Colors.primary} /> : !user ? (
-          <Text style={S.muted}>Log in to use your PayPort wallet.</Text>
+          <Text style={S.muted}>Log in to use your Payport wallet.</Text>
         ) : error && wallets.length === 0 ? (
-          <View style={S.card}><Text style={S.h}>PayPort Wallet</Text><Text style={S.errTxt}>{error}</Text><Text style={S.muted}>Pull down to try again.</Text></View>
+          <View style={S.card}><Text style={S.h}>Payport Wallet</Text><Text style={S.errTxt}>{error}</Text><Text style={S.muted}>Pull down to try again.</Text></View>
         ) : !enabled && wallets.length === 0 ? (
-          <View style={S.card}><Text style={S.h}>PayPort Wallet</Text><Text style={S.muted}>The wallet is not available yet. You can keep paying with mobile money and cards.</Text></View>
+          <View style={S.card}><Text style={S.h}>Payport Wallet</Text><Text style={S.muted}>The wallet is not available yet. You can keep paying with mobile money and cards.</Text></View>
         ) : (
           <>
             {error ? <View style={S.err}><Text style={S.errTxt}>{error}</Text></View> : null}

@@ -10,7 +10,7 @@ import { storeApi, walletApi, formatAmount, normalizePhone, newIdempotencyKey } 
 import { useAuthStore } from '../../store/authStore';
 import { TYPE_COLOURS } from './index';
 
-const METHOD_NAMES: Record<string, string> = { WALLET: 'PayPort Wallet', ECOCASH: 'EcoCash', ONEMONEY: 'OneMoney', OMARI: 'Omari', INNBUCKS: 'InnBucks', ZIMSWITCH: 'Card', CASH: 'Pay on delivery' };
+const METHOD_NAMES: Record<string, string> = { WALLET: 'Payport Wallet', ECOCASH: 'EcoCash', ONEMONEY: 'OneMoney', OMARI: 'Omari', INNBUCKS: 'InnBucks', ZIMSWITCH: 'Card', CASH: 'Pay on delivery' };
 
 const S = themed(() => ({
   body: { padding: 16, paddingBottom: 120 },
@@ -248,7 +248,7 @@ export default function StorePage() {
           </View>
         </View>
       </Modal>
-      <PinModal visible={pin} title="Enter your PayPort PIN" busy={busy} onClose={() => setPin(false)} onSubmit={(p) => place(p)} />
+      <PinModal visible={pin} title="Enter your Payport PIN" busy={busy} onClose={() => setPin(false)} onSubmit={(p) => place(p)} />
     </GradientScreen>
   );
 }

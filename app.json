@@ -63,7 +63,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "PayPort uses the camera to scan merchant QR codes."
+          "cameraPermission": "Payport uses the camera to scan merchant QR codes."
         }
       ]
     ],
