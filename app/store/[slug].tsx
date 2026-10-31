@@ -155,6 +155,14 @@ export default function StorePage() {
           {!!st.rating && <Text style={S.heroTxt}>{st.rating}</Text>}
           {!st.open && <Text style={S.heroTxt}>Not taking orders at the moment.</Text>}
         </View>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <TouchableOpacity style={S.chip} onPress={() => (user ? router.push({ pathname: '/store/chat', params: { slug: String(slug), name: st.name } } as any) : router.push('/(auth)/login' as any))}>
+            <Text style={S.chipTxt}><Ionicons name="chatbubble-ellipses-outline" size={14} /> Chat with seller</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={S.chip} onPress={() => (user ? router.push({ pathname: '/store/chat', params: { slug: String(slug), name: st.name, report: '1' } } as any) : router.push('/(auth)/login' as any))}>
+            <Text style={S.chipTxt}>Report this store</Text>
+          </TouchableOpacity>
+        </View>
         {(st.collections || []).length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.chips}>
             {[{ slug: '', name: 'All' }, ...st.collections].map((c: any) => (
