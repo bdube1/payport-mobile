@@ -157,7 +157,7 @@ export default function StorePage() {
         </View>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <TouchableOpacity style={S.chip} onPress={() => (user ? router.push({ pathname: '/store/chat', params: { slug: String(slug), name: st.name } } as any) : router.push('/(auth)/login' as any))}>
-            <Text style={S.chipTxt}><Ionicons name="chatbubble-ellipses-outline" size={14} /> Chat with seller</Text>
+            <Text style={S.chipTxt}><Ionicons name="chatbubble-ellipses-outline" size={14} /> Contact seller</Text>
           </TouchableOpacity>
           <TouchableOpacity style={S.chip} onPress={() => (user ? router.push({ pathname: '/store/chat', params: { slug: String(slug), name: st.name, report: '1' } } as any) : router.push('/(auth)/login' as any))}>
             <Text style={S.chipTxt}>Report this store</Text>
