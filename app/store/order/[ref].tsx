@@ -44,6 +44,7 @@ export default function StoreOrder() {
           color={good ? Colors.green : state === 'Not paid' || state === 'Cancelled' ? Colors.red : Colors.primary} />
         <Text style={S.state}>{state}</Text>
         <Text style={S.sub}>{o.store}</Text>
+        {!!o.paymentReason && state === 'Not paid' && <Text style={[S.sub, { color: Colors.red, fontFamily: 'Rubik_700Bold' }]}>{o.paymentReason}</Text>}
         {state === 'Waiting for payment' && o.payMethod !== 'CASH' && <><ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} /><Text style={S.sub}>The result shows here as soon as the payment is done.</Text></>}
         <View style={S.box}>
           <View style={S.row}><Text style={S.lbl}>Order</Text><Text style={S.val}>{o.summary}</Text></View>
