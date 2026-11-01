@@ -86,6 +86,8 @@ export default function StorePage() {
   const [pin, setPin] = useState(false);
   const [usePoints, setUsePoints] = useState(false);
   const [offers, setOffers] = useState(false);
+  const [omari, setOmari] = useState<{ session: number; ref: string } | null>(null);
+  const [otp, setOtp] = useState('');
   const key = useRef(newIdempotencyKey().replace(/-/g, ''));
 
   const load = (c = col) => storeApi.store(slug, c).then(r => setSt(r.data?.data || r.data)).catch(e => setError(e?.response?.data?.message || 'This store could not be opened.'));
@@ -110,7 +112,7 @@ export default function StorePage() {
 
   const checkout = async () => {
     if (!user) { router.push('/(auth)/login' as any); return; }
-    setProblem(''); setQuote(null); setOpen(true);
+    setProblem(''); setQuote(null); setOmari(null); setOtp(''); setOpen(true);
     setHow(ways[0]?.v || ''); setPay(pays[0] || '');
     if (anyService && st?.bookings) {
       try { const r = await storeApi.slots(slug, lines); setSlots(r.data?.data || []); } catch { setSlots([]); }
@@ -131,12 +133,29 @@ export default function StorePage() {
       if (!o.checkoutSessionId) { setProblem(o.problem || 'Your order is saved; pay it from My orders.'); return; }
       if (pay === 'WALLET') await walletApi.payCheckout(o.checkoutSessionId, walletPin || '');
       else if (pay === 'ZIMSWITCH') { if (o.checkoutUrl) await Linking.openURL(o.checkoutUrl); }
-      else await storeApi.payCheckout(o.checkoutSessionId, normalizePhone(phone), pay);
+      else {
+        const pr = await storeApi.payCheckout(o.checkoutSessionId, normalizePhone(phone), pay);
+        // O'mari texts a code instead of showing a prompt: it is typed here.
+        if ((pr.data?.data || pr.data)?.requiresOtpEntry) { setOmari({ session: o.checkoutSessionId, ref: o.orderRef }); return; }
+      }
       setOpen(false);
       router.replace(`/store/order/${o.orderRef}` as any);
     } catch (e: any) {
       setProblem(e?.response?.data?.message || 'The order could not be placed. No money was taken.');
     } finally { setBusy(false); setPin(false); }
+  };
+
+  const confirmOtp = async () => {
+    if (!omari || !otp.trim()) return;
+    setBusy(true); setProblem('');
+    try {
+      await storeApi.omariOtp(omari.session, otp.trim());
+      const ref = omari.ref;
+      setOmari(null); setOtp(''); setOpen(false);
+      router.replace(`/store/order/${ref}` as any);
+    } catch (e: any) {
+      setProblem(e?.response?.data?.message || 'The code could not be checked.');
+    } finally { setBusy(false); }
   };
 
   if (!st) return (
@@ -246,11 +265,18 @@ export default function StorePage() {
                 {quote.deliveryFeeMinor > 0 && <View style={S.sumRow}><Text style={S.sumLbl}>Delivery</Text><Text style={S.sumVal}>{formatAmount(quote.deliveryFeeMinor, quote.currency)}</Text></View>}
                 <View style={S.sumRow}><Text style={[S.sumVal, { fontSize: 16 }]}>Total</Text><Text style={[S.sumVal, { fontSize: 18, color: Colors.primary }]}>{quote.total}</Text></View>
               </View>}
+              {!!omari && <>
+                <Text style={S.lbl}>Enter the code O'mari sent you by SMS</Text>
+                <TextInput style={S.input} value={otp} onChangeText={t => setOtp(t.replace(/\s/g, ''))} keyboardType="number-pad" maxLength={10} placeholder="Code" placeholderTextColor={Colors.textSecondary} />
+              </>}
               {!!problem && <View style={S.err}><Text style={S.errTxt}>{problem}</Text></View>}
-              <TouchableOpacity style={[S.btn, (busy || !quote) && { opacity: 0.6 }]} disabled={busy || !quote}
+              {!!omari && <TouchableOpacity style={[S.btn, (busy || !otp.trim()) && { opacity: 0.6 }]} disabled={busy || !otp.trim()} onPress={confirmOtp}>
+                <Text style={S.btnTxt}>{busy ? 'Checking…' : 'Confirm payment'}</Text>
+              </TouchableOpacity>}
+              {!omari && <TouchableOpacity style={[S.btn, (busy || !quote) && { opacity: 0.6 }]} disabled={busy || !quote}
                 onPress={() => (pay === 'WALLET' ? setPin(true) : place())}>
                 <Text style={S.btnTxt}>{busy ? 'Placing order…' : pay === 'CASH' ? 'Place order' : `Pay ${quote?.total || ''}`}</Text>
-              </TouchableOpacity>
+              </TouchableOpacity>}
               <TouchableOpacity onPress={() => setOpen(false)} style={{ alignItems: 'center', marginTop: 14 }}><Text style={S.itemMeta}>Back to the store</Text></TouchableOpacity>
             </ScrollView>
           </View>

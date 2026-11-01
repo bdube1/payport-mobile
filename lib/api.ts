@@ -251,6 +251,8 @@ export const storeApi = {
   /** A store order paid with mobile money on its checkout (card opens the checkout page instead). */
   payCheckout: (sessionId: number, customerPhone: string, paymentMethodCode: string) =>
     api.post(`/api/v1/checkout/${sessionId}/pay`, { customerPhone, paymentMethodCode }),
+  /** O'mari's code (texted to the payer) for that checkout. */
+  omariOtp: (sessionId: number, otp: string) => api.post(`/api/v1/checkout/${sessionId}/omari-otp`, { otp }),
   /** Chat with the store's seller (the same conversation as on the website). */
   chat: (slug: string, after = 0) => api.get(`/api/v1/store/stores/${encodeURIComponent(slug)}/chat`, { params: { after } }),
   say: (slug: string, text: string) => api.post(`/api/v1/store/stores/${encodeURIComponent(slug)}/chat`, { text }),
