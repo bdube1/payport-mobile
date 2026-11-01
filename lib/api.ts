@@ -265,6 +265,9 @@ export const storeApi = {
 // ── Wallet ──────────────────────────────────────────────────────────────
 export const walletApi = {
   list: () => api.get('/api/v1/wallet'),
+  /** Payport Tap: a one-time NFC token (after the PIN) and what happened to it. */
+  tap: (currency: string, pin: string) => api.post('/api/v1/wallet/tap', { currency, pin }),
+  tapStatus: (token: string) => api.get('/api/v1/wallet/tap/status', { params: { token } }),
   open: (currency: string) => api.post('/api/v1/wallet/open', { currency }),
   statement: (ref: string, limit = 100) => api.get(`/api/v1/wallet/${encodeURIComponent(ref)}/statement?limit=${limit}`),
   transfer: (to: string, currency: string, amountMinor: number, pin: string, clientRef?: string) =>

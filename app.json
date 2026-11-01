@@ -65,7 +65,8 @@
         {
           "cameraPermission": "Payport uses the camera to scan merchant QR codes."
         }
-      ]
+      ],
+      "./plugins/withPayportTap"
     ],
     "experiments": {
       "typedRoutes": true
