@@ -77,10 +77,14 @@ export async function unregisterPush(): Promise<void> {
   }
 }
 
-/** Opens the transaction when the customer taps a payment notification. Returns the unsubscribe function. */
+/** Opens what a notification is about when the customer taps it (payment, store order or chat). Returns the unsubscribe function. */
 export function listenForNotificationTaps(): () => void {
   const open = (response: Notifications.NotificationResponse | null) => {
-    const ref = (response?.notification.request.content.data as any)?.reference;
+    const data = (response?.notification.request.content.data as any) || {};
+    const ref = data.reference;
+    // Store chats open Messages; store orders open the order; payments open their status.
+    if (data.type === 'chat') { router.push('/store/messages' as any); return; }
+    if (data.type === 'order' && typeof ref === 'string' && /^[A-Za-z0-9_-]{4,64}$/.test(ref)) { router.push(`/store/order/${ref}` as any); return; }
     if (typeof ref === 'string' && /^[A-Za-z0-9_-]{4,64}$/.test(ref)) router.push(`/status/${ref}`);
   };
   // Cold start from a tap: give the navigator a moment to mount first.
