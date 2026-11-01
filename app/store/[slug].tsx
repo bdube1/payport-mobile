@@ -101,7 +101,7 @@ export default function StorePage() {
   const total = chosen.reduce((a, i) => a + i.priceMinor * cart[i.id], 0);
   const ccy = chosen[0]?.currency || 'USD';
   const ways = [st?.pickup && { v: 'PICKUP', l: 'Collect' }, st?.delivery && { v: 'DELIVERY', l: 'Delivery' }].filter(Boolean) as any[];
-  const pays = [...(user ? ['WALLET'] : []), ...((st?.methods?.length ? st.methods : ['ECOCASH', 'ONEMONEY', 'OMARI', 'INNBUCKS', 'ZIMSWITCH']) as string[]), ...(st?.payOnDelivery ? ['CASH'] : [])];
+  const pays = [...new Set([...(user ? ['WALLET'] : []), ...((st?.methods?.length ? st.methods : ['ECOCASH', 'ONEMONEY', 'OMARI', 'INNBUCKS', 'ZIMSWITCH']) as string[]).filter(m => !/WALLET|CASH/i.test(m)), ...(st?.payOnDelivery ? ['CASH'] : [])])];
 
   const add = (id: number, d: number) => setCart(c => ({ ...c, [id]: Math.max(0, Math.min(20, (c[id] || 0) + d)) }));
   const order = () => ({ store: slug, items: lines, method: servicesOnly ? undefined : how, zone: zone || undefined, address: address || undefined,

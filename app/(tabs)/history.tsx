@@ -1,25 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GradientScreen from '../../components/ui/GradientScreen';
 import AppBar from '../../components/ui/AppBar';
 import { Colors, themed } from '../../constants/colors';
-import { transactionsApi, walletApi, formatAmount } from '../../lib/api';
+import { walletApi, formatAmount } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 
-function fmtDate(val: any) {
-  if (!val) return '—';
-  try {
-    if (Array.isArray(val)) { const [y,mo,d]=val; return new Date(y,mo-1,d).toLocaleDateString('en-ZW',{day:'numeric',month:'short',year:'numeric'}); }
-    return new Date(val).toLocaleDateString('en-ZW',{day:'numeric',month:'short'});
-  } catch { return '—'; }
-}
-
-const STATUS_COLOR: Record<string,string> = { COMPLETED: Colors.green, PAYMENT_PENDING: Colors.primary, PAYMENT_FAILED: Colors.red, FULFILMENT_FAILED: Colors.red, FULFILMENT_PENDING: Colors.orange, FULFILMENT_RETRY: Colors.orange, MANUAL_FULFILMENT: Colors.orange, PAYMENT_TIMEOUT: Colors.textSecondary, REFUNDED: Colors.primary, REFUND_PENDING: Colors.primary };
-
 const KIND: Record<string, string> = { TOPUP: 'Top-up', PAYMENT: 'Payment', P2P_OUT: 'Sent', P2P_IN: 'Received', CASH_IN: 'Cash in', CASH_OUT: 'Cash out', FX_OUT: 'Converted out', FX_IN: 'Converted in', REFUND: 'Refund' };
-const METHOD: Record<string, string> = { WALLET: 'Payport Wallet', ECOCASH: 'EcoCash', ONEMONEY: 'OneMoney', OMARI: "O'mari", INNBUCKS: 'InnBucks', ZIMSWITCH: 'Card (ZimSwitch)' };
 const full = (v: any) => {
   if (!v) return '';
   try {
@@ -42,84 +31,15 @@ function Details({ items, children }: { items: [string, any][]; children?: React
 export default function HistoryScreen() {
   const router = useRouter();
   const user   = useAuthStore((s) => s.user);
-  const params = useLocalSearchParams<{ tab?: string }>();
-  const [tab, setTab] = useState<'payments' | 'wallet'>(params.tab === 'wallet' ? 'wallet' : 'payments');
-  const [open, setOpen] = useState<string | null>(null);
-  useEffect(() => { if (params.tab === 'wallet' || params.tab === 'payments') setTab(params.tab); }, [params.tab]);
-  const [txs,        setTxs]        = useState<any[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error,      setError]      = useState('');
-
-  const load = async (refresh = false) => {
-    if (refresh) setRefreshing(true); else setLoading(true);
-    try {
-      const r = await transactionsApi.getMyHistory(0, 20);
-      setTxs((r.data?.data || r.data)?.content || []);
-    } catch { setError('Failed to load transactions'); }
-    finally { setLoading(false); setRefreshing(false); }
-  };
-
-  useEffect(() => { if (user) load(); else setLoading(false); }, [user]);
-
   return (
     <GradientScreen>
       <AppBar title="History" />
-      {user ? (
-        <View style={S.tabs}>
-          {([['payments', 'Payments'], ['wallet', 'Wallet']] as const).map(([k, t]) => (
-            <TouchableOpacity key={k} onPress={() => setTab(k)} style={[S.tab, tab === k && S.tabOn]}>
-              <Text style={[S.tabTxt, tab === k && { color: '#fff' }]}>{t}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      ) : null}
-      {user && tab === 'wallet' ? <WalletHistory /> : !user ? (
+      {user ? <WalletHistory /> : (
         <View style={S.centre}>
           <Ionicons name="time-outline" size={44} color={Colors.textSecondary} />
           <Text style={S.emptyTitle}>Sign in to view history</Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={S.btn}><Text style={S.btnTxt}>Sign In</Text></TouchableOpacity>
         </View>
-      ) : loading ? (
-        <View style={S.centre}><ActivityIndicator color={Colors.primary} size="large" /></View>
-      ) : error ? (
-        <View style={S.centre}>
-          <Text style={S.emptyTitle}>{error}</Text>
-          <TouchableOpacity onPress={() => load()} style={S.btn}><Text style={S.btnTxt}>Retry</Text></TouchableOpacity>
-        </View>
-      ) : txs.length === 0 ? (
-        <View style={S.centre}>
-          <Ionicons name="time-outline" size={44} color={Colors.textSecondary} />
-          <Text style={S.emptyTitle}>No transactions yet</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={txs} keyExtractor={(item) => item.reference}
-          contentContainerStyle={{ padding: 12 }}
-          onRefresh={() => load(true)} refreshing={refreshing}
-          renderItem={({ item }) => {
-            const sc = STATUS_COLOR[item.status] || Colors.textSecondary;
-            return (
-              <TouchableOpacity onPress={() => setOpen(open === item.reference ? null : item.reference)} style={S.card} activeOpacity={0.85}>
-                <View style={S.cardRow}>
-                  <Text style={S.txName} numberOfLines={1}>{item.productName || 'Transaction'}</Text>
-                  <Text style={[S.txAmount, { color: Colors.primary }]}>{formatAmount(item.totalCents ?? item.amountCents, item.currency)}</Text>
-                </View>
-                <View style={S.cardRow}>
-                  <Text style={S.txDate}>{item.toName || item.recipientIdentifier}  ·  {fmtDate(item.createdAt)}</Text>
-                  <Text style={[S.txStatus, { color: sc }]}>{item.status.replace(/_/g,' ')}</Text>
-                </View>
-                {open === item.reference ? (
-                  <Details items={[['Reference', item.reference], ['Trxn Type', item.productName], ['To', item.toName || item.recipientIdentifier], ['Amount', formatAmount(item.totalCents ?? item.amountCents, item.currency)],
-                    ['Paid with', METHOD[item.paymentMethodCode] || item.paymentMethodCode], ['Status', item.status.replace(/_/g, ' ')], ['Date', full(item.createdAt || item.initiatedAt)],
-                    ['Token', item.voucherToken || item.token]]}>
-                    <TouchableOpacity onPress={() => router.push(`/status/${item.reference}`)}><Text style={S.link}>Track this order ›</Text></TouchableOpacity>
-                  </Details>
-                ) : null}
-              </TouchableOpacity>
-            );
-          }}
-        />
       )}
     </GradientScreen>
   );

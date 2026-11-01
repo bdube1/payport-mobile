@@ -44,7 +44,7 @@ export default function StoreOrder() {
           color={good ? Colors.green : state === 'Not paid' || state === 'Cancelled' ? Colors.red : Colors.primary} />
         <Text style={S.state}>{state}</Text>
         <Text style={S.sub}>{o.store}</Text>
-        {state === 'Payment being confirmed' && <Text style={S.sub}>This page updates by itself. You do not need to pay again.</Text>}
+        {state === 'Waiting for payment' && o.payMethod !== 'CASH' && <><ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} /><Text style={S.sub}>The result shows here as soon as the payment is done.</Text></>}
         <View style={S.box}>
           <View style={S.row}><Text style={S.lbl}>Order</Text><Text style={S.val}>{o.summary}</Text></View>
           {!!o.booking && <View style={S.row}><Text style={S.lbl}>Appointment</Text><Text style={S.val}>{o.booking}</Text></View>}

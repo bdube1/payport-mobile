@@ -221,10 +221,12 @@ export async function startPayment(
 }
 
 /** The Payport wallet is offered only to a signed-in customer. */
-export function visibleMethods<T extends { code: string }>(methods: T[], signedIn: boolean): T[] {
-  if (!signedIn) return methods.filter(m => m.code !== 'WALLET');
-  // A signed-in customer can always pay from the Payport wallet, and it is the first option.
-  return [{ code: 'WALLET', name: 'Payport Wallet', isActive: true, displayOrder: -1000 } as any as T, ...methods.filter(m => m.code !== 'WALLET')];
+export const isWalletCode = (code?: string) => /WALLET/i.test(code || '');
+export function visibleMethods<T extends { code: string; name?: string }>(methods: T[], signedIn: boolean): T[] {
+  // The wallet is listed once, first, whatever code or name the backend gives it.
+  const others = methods.filter(m => !isWalletCode(m.code) && !/wallet/i.test(m.name || ''));
+  if (!signedIn) return others;
+  return [{ code: 'WALLET', name: 'Payport Wallet', isActive: true, displayOrder: -1000 } as any as T, ...others];
 }
 
 // Countries and currencies Payport serves (public).

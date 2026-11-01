@@ -62,7 +62,7 @@ function RegisteredHome() {
                     <View style={styles.wrow}>
                         {wallets === null ? <View style={styles.wcard}><Text style={styles.wref}>Loading…</Text></View> : null}
                         {(wallets || []).map((w) => (
-                            <TouchableOpacity key={w.walletRef} style={styles.wcard} activeOpacity={0.85} onPress={() => router.push(`/history?tab=wallet` as any)}>
+                            <TouchableOpacity key={w.walletRef} style={styles.wcard} activeOpacity={0.85} onPress={() => router.push('/history' as any)}>
                                 <View style={styles.wtop}>
                                     <View style={styles.wicon}><Ionicons name="wallet-outline" size={22} color="#0E86C2" /></View>
                                     <View style={{ flex: 1, minWidth: 0 }}>
