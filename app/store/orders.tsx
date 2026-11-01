@@ -50,6 +50,7 @@ export default function StoreOrders() {
             <Text style={S.meta}>{o.orderRef} · {o.summary}</Text>
             {!!o.booking && <Text style={S.meta}>{o.booking}</Text>}
             <Text style={S.state}>{orderState(o)}</Text>
+            {!!o.paymentReason && orderState(o) === 'Not paid' && <Text style={[S.meta, { color: Colors.red }]}>{o.paymentReason}</Text>}
           </TouchableOpacity>
         ))}
       </ScrollView>
