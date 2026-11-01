@@ -143,7 +143,7 @@ function TopUp({ w, phone, onError, onStarted }: { w: W; phone: string; onError:
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     productsApi.getPaymentMethods().then((r) => {
-      const m = (r.data?.data || r.data || []).filter((x: any) => x.isActive && x.code !== 'WALLET');
+      const m = (r.data?.data || r.data || []).filter((x: any) => x.isActive && !/WALLET/i.test(x.code || '') && !/wallet/i.test(x.name || ''));
       setMethods(m); setMethod(m[0]?.code || '');
     }).catch(() => {});
   }, []);

@@ -15,7 +15,7 @@ export function orderState(o: any): string {
   switch (o.paymentStatus) {
     case 'PAID': return 'Paid';
     case 'ON_DELIVERY': return 'Pay on delivery';
-    case 'PENDING': case 'CONFIRMING': return 'Payment being confirmed';
+    case 'PENDING': case 'CONFIRMING': return 'Waiting for payment';
     case 'FAILED': case 'EXPIRED': return 'Not paid';
     default: return 'Awaiting payment';
   }
