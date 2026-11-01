@@ -59,7 +59,10 @@ export default function StoreDirectory() {
   return (
     <GradientScreen>
       <AppBar title="Payport Store" showBack rightElement={
-        <TouchableOpacity onPress={() => router.push('/store/orders' as any)}><Ionicons name="receipt-outline" size={22} color="#fff" /></TouchableOpacity>} />
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <TouchableOpacity onPress={() => router.push('/store/messages' as any)} accessibilityLabel="Messages"><Ionicons name="chatbubbles-outline" size={22} color="#fff" /></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/store/orders' as any)} accessibilityLabel="My orders"><Ionicons name="receipt-outline" size={22} color="#fff" /></TouchableOpacity>
+        </View>} />
       <ScrollView contentContainerStyle={S.body} keyboardShouldPersistTaps="handled">
         <View style={S.search}>
           <Ionicons name="search" size={18} color={Colors.textSecondary} />
