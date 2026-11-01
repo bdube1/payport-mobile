@@ -23,6 +23,7 @@ const WALLET_SERVICES = [
     { icon: 'paper-plane-outline' as const,     title: 'Send money',   route: '/wallet?a=send' },
     { icon: 'cash-outline' as const,            title: 'Cash out',     route: '/wallet?a=cashout' },
     { icon: 'swap-horizontal-outline' as const, title: 'Convert',      route: '/wallet?a=convert' },
+    { icon: 'radio-outline' as const,           title: 'Tap to pay',   route: '/wallet/tap' },
     { icon: 'storefront-outline' as const,      title: 'Pay merchant', route: '/wallet?a=merchant' },
     { icon: 'phone-portrait-outline' as const,  title: 'Airtime',      route: '/airtime' },
     { icon: 'wifi-outline' as const,            title: 'Data',         route: '/data' },
